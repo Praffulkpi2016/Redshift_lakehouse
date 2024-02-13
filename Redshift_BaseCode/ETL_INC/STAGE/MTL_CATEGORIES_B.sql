@@ -1,0 +1,159 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for stage.
+# File Version: KPI v1.0
+*/
+begin;
+
+truncate
+	table bec_ods_stg.mtl_categories_b;
+
+insert
+	into
+	bec_ods_stg.mtl_categories_b
+(CATEGORY_ID,
+STRUCTURE_ID,
+LAST_UPDATE_DATE,
+LAST_UPDATED_BY,
+CREATION_DATE,
+CREATED_BY,
+LAST_UPDATE_LOGIN,
+DESCRIPTION,
+DISABLE_DATE,
+SEGMENT1,
+SEGMENT2,
+SEGMENT3,
+SEGMENT4,
+SEGMENT5,
+SEGMENT6,
+SEGMENT7,
+SEGMENT8,
+SEGMENT9,
+SEGMENT10,
+SEGMENT11,
+SEGMENT12,
+SEGMENT13,
+SEGMENT14,
+SEGMENT15,
+SEGMENT16,
+SEGMENT17,
+SEGMENT18,
+SEGMENT19,
+SEGMENT20,
+SUMMARY_FLAG,
+ENABLED_FLAG,
+START_DATE_ACTIVE,
+END_DATE_ACTIVE,
+ATTRIBUTE_CATEGORY,
+ATTRIBUTE1,
+ATTRIBUTE2,
+ATTRIBUTE3,
+ATTRIBUTE4,
+ATTRIBUTE5,
+ATTRIBUTE6,
+ATTRIBUTE7,
+ATTRIBUTE8,
+ATTRIBUTE9,
+ATTRIBUTE10,
+ATTRIBUTE11,
+ATTRIBUTE12,
+ATTRIBUTE13,
+ATTRIBUTE14,
+ATTRIBUTE15,
+REQUEST_ID,
+PROGRAM_APPLICATION_ID,
+PROGRAM_ID,
+PROGRAM_UPDATE_DATE,
+--WH_UPDATE_DATE,
+--TOTAL_PROD_ID,
+WEB_STATUS,
+SUPPLIER_ENABLED_FLAG,
+ZD_EDITION_NAME,
+ZD_SYNC,
+KCA_OPERATION
+,kca_seq_id,
+	kca_seq_date)
+(
+	select
+	CATEGORY_ID,
+STRUCTURE_ID,
+LAST_UPDATE_DATE,
+LAST_UPDATED_BY,
+CREATION_DATE,
+CREATED_BY,
+LAST_UPDATE_LOGIN,
+DESCRIPTION,
+DISABLE_DATE,
+SEGMENT1,
+SEGMENT2,
+SEGMENT3,
+SEGMENT4,
+SEGMENT5,
+SEGMENT6,
+SEGMENT7,
+SEGMENT8,
+SEGMENT9,
+SEGMENT10,
+SEGMENT11,
+SEGMENT12,
+SEGMENT13,
+SEGMENT14,
+SEGMENT15,
+SEGMENT16,
+SEGMENT17,
+SEGMENT18,
+SEGMENT19,
+SEGMENT20,
+SUMMARY_FLAG,
+ENABLED_FLAG,
+START_DATE_ACTIVE,
+END_DATE_ACTIVE,
+ATTRIBUTE_CATEGORY,
+ATTRIBUTE1,
+ATTRIBUTE2,
+ATTRIBUTE3,
+ATTRIBUTE4,
+ATTRIBUTE5,
+ATTRIBUTE6,
+ATTRIBUTE7,
+ATTRIBUTE8,
+ATTRIBUTE9,
+ATTRIBUTE10,
+ATTRIBUTE11,
+ATTRIBUTE12,
+ATTRIBUTE13,
+ATTRIBUTE14,
+ATTRIBUTE15,
+REQUEST_ID,
+PROGRAM_APPLICATION_ID,
+PROGRAM_ID,
+PROGRAM_UPDATE_DATE,
+--WH_UPDATE_DATE,
+--TOTAL_PROD_ID,
+WEB_STATUS,
+SUPPLIER_ENABLED_FLAG,
+ZD_EDITION_NAME,
+ZD_SYNC,
+KCA_OPERATION
+,kca_seq_id,
+	kca_seq_date
+	from
+		bec_raw_dl_ext.mtl_categories_b
+where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= '' and (CATEGORY_ID,kca_seq_id) in (select CATEGORY_ID,max(kca_seq_id) from bec_raw_dl_ext.mtl_categories_b 
+where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= ''
+group by CATEGORY_ID)
+and 
+( kca_seq_date > (
+select (executebegints-prune_days) from bec_etl_ctrl.batch_ods_info where ods_table_name = 'mtl_categories_b')
+ 
+            )
+);		
+		
+end;

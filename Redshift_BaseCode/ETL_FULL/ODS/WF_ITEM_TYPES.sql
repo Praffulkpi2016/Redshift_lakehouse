@@ -1,0 +1,106 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents full load approach for ODS.
+# File Version: KPI v1.0
+*/
+
+begin;
+
+DROP TABLE if exists bec_ods.wf_item_types;
+
+CREATE TABLE IF NOT EXISTS bec_ods.wf_item_types
+(
+	NAME	VARCHAR(8)  ENCODE lzo
+	,PROTECT_LEVEL	NUMERIC(28,10)   ENCODE az64
+	,CUSTOM_LEVEL	NUMERIC(28,10)   ENCODE az64
+	,WF_SELECTOR	VARCHAR(240)  ENCODE lzo
+	,READ_ROLE	VARCHAR(320)  ENCODE lzo
+	,WRITE_ROLE	VARCHAR(320)  ENCODE lzo
+	,EXECUTE_ROLE	VARCHAR(320)  ENCODE lzo
+	,PERSISTENCE_TYPE	VARCHAR(8)  ENCODE lzo	
+	,PERSISTENCE_DAYS	NUMERIC(28,10)   ENCODE az64
+	,SECURITY_GROUP_ID	VARCHAR(32)  ENCODE lzo		
+	,NUM_ACTIVE	NUMERIC(28,10)   ENCODE az64	
+	,NUM_ERROR	NUMERIC(28,10)   ENCODE az64	
+	,NUM_DEFER	NUMERIC(28,10)   ENCODE az64	
+	,NUM_SUSPEND	NUMERIC(28,10)   ENCODE az64	
+	,NUM_COMPLETE	NUMERIC(28,10)   ENCODE az64		
+	,NUM_PURGEABLE	NUMERIC(28,10)   ENCODE az64
+	,ZD_EDITION_NAME	VARCHAR(30)  ENCODE lzo
+	,ZD_SYNC	VARCHAR(30)  ENCODE lzo	
+	,KCA_OPERATION VARCHAR(10)   ENCODE lzo
+	,IS_DELETED_FLG VARCHAR(2) ENCODE lzo
+	,KCA_SEQ_ID NUMERIC(36,0)   ENCODE az64
+	,kca_seq_date TIMESTAMP WITHOUT TIME ZONE   ENCODE az64	
+)
+DISTSTYLE
+auto;
+
+INSERT INTO bec_ods.wf_item_types
+(
+	NAME,
+	PROTECT_LEVEL,
+	CUSTOM_LEVEL,
+	WF_SELECTOR,
+	READ_ROLE,
+	WRITE_ROLE,
+	EXECUTE_ROLE,
+	PERSISTENCE_TYPE,
+	PERSISTENCE_DAYS,
+	SECURITY_GROUP_ID,
+	NUM_ACTIVE,
+	NUM_ERROR,
+	NUM_DEFER,
+	NUM_SUSPEND,
+	NUM_COMPLETE,
+	NUM_PURGEABLE,
+	ZD_EDITION_NAME,
+	ZD_SYNC,
+	KCA_OPERATION,
+	IS_DELETED_FLG,
+	KCA_SEQ_ID
+	,kca_seq_date
+)
+SELECT
+	NAME,
+	PROTECT_LEVEL,
+	CUSTOM_LEVEL,
+	WF_SELECTOR,
+	READ_ROLE,
+	WRITE_ROLE,
+	EXECUTE_ROLE,
+	PERSISTENCE_TYPE,
+	PERSISTENCE_DAYS,
+	SECURITY_GROUP_ID,
+	NUM_ACTIVE,
+	NUM_ERROR,
+	NUM_DEFER,
+	NUM_SUSPEND,
+	NUM_COMPLETE,
+	NUM_PURGEABLE,
+	ZD_EDITION_NAME,
+	ZD_SYNC,
+	KCA_OPERATION,
+	'N' as IS_DELETED_FLG,
+cast(NULLIF(KCA_SEQ_ID,'') as numeric(36,0)) as KCA_SEQ_ID
+,kca_seq_date
+    FROM
+        bec_ods_stg.wf_item_types;
+
+end;		
+
+UPDATE bec_etl_ctrl.batch_ods_info
+SET
+    load_type = 'I',
+    last_refresh_date = getdate()
+WHERE
+    ods_table_name = 'wf_item_types'; 
+	
+COMMIT;

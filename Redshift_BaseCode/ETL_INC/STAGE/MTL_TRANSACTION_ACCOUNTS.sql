@@ -1,0 +1,110 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for stage.
+# File Version: KPI v1.0
+*/
+begin;
+
+truncate table bec_ods_stg.MTL_TRANSACTION_ACCOUNTS;
+
+insert into	bec_ods_stg.MTL_TRANSACTION_ACCOUNTS
+   (	
+	TRANSACTION_ID, 
+	REFERENCE_ACCOUNT, 
+	LAST_UPDATE_DATE, 
+	LAST_UPDATED_BY, 
+	CREATION_DATE, 
+	CREATED_BY, 
+	LAST_UPDATE_LOGIN, 
+	INVENTORY_ITEM_ID, 
+	ORGANIZATION_ID, 
+	TRANSACTION_DATE, 
+	TRANSACTION_SOURCE_ID, 
+	TRANSACTION_SOURCE_TYPE_ID, 
+	TRANSACTION_VALUE, 
+	PRIMARY_QUANTITY, 
+	GL_BATCH_ID, 
+	ACCOUNTING_LINE_TYPE, 
+	BASE_TRANSACTION_VALUE, 
+	CONTRA_SET_ID, 
+	RATE_OR_AMOUNT, 
+	BASIS_TYPE, 
+	RESOURCE_ID, 
+	COST_ELEMENT_ID, 
+	ACTIVITY_ID, 
+	CURRENCY_CODE,
+	CURRENCY_CONVERSION_DATE, 
+	CURRENCY_CONVERSION_TYPE, 
+	CURRENCY_CONVERSION_RATE, 
+	REQUEST_ID, 
+	PROGRAM_APPLICATION_ID, 
+	PROGRAM_ID, 
+	PROGRAM_UPDATE_DATE, 
+	ENCUMBRANCE_TYPE_ID, 
+	REPETITIVE_SCHEDULE_ID, 
+	GL_SL_LINK_ID, 
+	USSGL_TRANSACTION_CODE, 
+	INV_SUB_LEDGER_ID, 
+    KCA_OPERATION,
+	kca_seq_id,
+	kca_seq_date)
+(
+	select
+		TRANSACTION_ID, 
+		REFERENCE_ACCOUNT, 
+		LAST_UPDATE_DATE, 
+		LAST_UPDATED_BY, 
+		CREATION_DATE, 
+		CREATED_BY, 
+		LAST_UPDATE_LOGIN, 
+		INVENTORY_ITEM_ID, 
+		ORGANIZATION_ID, 
+		TRANSACTION_DATE, 
+		TRANSACTION_SOURCE_ID, 
+		TRANSACTION_SOURCE_TYPE_ID, 
+		TRANSACTION_VALUE, 
+		PRIMARY_QUANTITY, 
+		GL_BATCH_ID, 
+		ACCOUNTING_LINE_TYPE, 
+		BASE_TRANSACTION_VALUE, 
+		CONTRA_SET_ID, 
+		RATE_OR_AMOUNT, 
+		BASIS_TYPE, 
+		RESOURCE_ID, 
+		COST_ELEMENT_ID, 
+		ACTIVITY_ID, 
+		CURRENCY_CODE,
+		CURRENCY_CONVERSION_DATE, 
+		CURRENCY_CONVERSION_TYPE, 
+		CURRENCY_CONVERSION_RATE, 
+		REQUEST_ID, 
+		PROGRAM_APPLICATION_ID, 
+		PROGRAM_ID, 
+		PROGRAM_UPDATE_DATE, 
+		ENCUMBRANCE_TYPE_ID, 
+		REPETITIVE_SCHEDULE_ID, 
+		GL_SL_LINK_ID, 
+		USSGL_TRANSACTION_CODE, 
+		INV_SUB_LEDGER_ID,
+         KCA_OPERATION,
+		kca_seq_id,
+	kca_seq_date
+	from bec_raw_dl_ext.MTL_TRANSACTION_ACCOUNTS
+	where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= ''  
+	and (nvl(TRANSACTION_ID,0),nvl(REFERENCE_ACCOUNT,0),nvl(COST_ELEMENT_ID,0),nvl(PRIMARY_QUANTITY,0),
+nvl(RESOURCE_ID,0),nvl(ACCOUNTING_LINE_TYPE,0),nvl(BASE_TRANSACTION_VALUE,0),kca_seq_id) in 
+	(select nvl(TRANSACTION_ID,0),nvl(REFERENCE_ACCOUNT,0),nvl(COST_ELEMENT_ID,0),nvl(PRIMARY_QUANTITY,0),
+nvl(RESOURCE_ID,0),nvl(ACCOUNTING_LINE_TYPE,0),nvl(BASE_TRANSACTION_VALUE,0),max(kca_seq_id) from bec_raw_dl_ext.MTL_TRANSACTION_ACCOUNTS 
+     where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= ''
+     group by nvl(TRANSACTION_ID,0),nvl(REFERENCE_ACCOUNT,0),nvl(COST_ELEMENT_ID,0),nvl(PRIMARY_QUANTITY,0),
+nvl(RESOURCE_ID,0),nvl(ACCOUNTING_LINE_TYPE,0),nvl(BASE_TRANSACTION_VALUE,0))
+        and	 kca_seq_date > (select (executebegints-prune_days) from bec_etl_ctrl.batch_ods_info where ods_table_name ='mtl_transaction_accounts')	
+);
+end;

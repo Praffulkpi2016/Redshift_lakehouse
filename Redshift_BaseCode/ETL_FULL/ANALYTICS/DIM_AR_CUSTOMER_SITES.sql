@@ -1,0 +1,132 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents full load approach for Dimensions.
+# File Version: KPI v1.0
+*/
+
+
+begin;
+
+drop table if exists bec_dwh.DIM_AR_CUSTOMER_SITES;
+
+create table bec_dwh.DIM_AR_CUSTOMER_SITES diststyle all sortkey (SITE_USE_ID)
+as
+(
+select
+RS.SALESREP_ID,
+RS.RESOURCE_ID,
+--RS.LAST_UPDATE_DATE,
+RS.NAME SALESREP_NAME,
+RS.STATUS SALESREP_STATUS,
+RS.START_DATE_ACTIVE,
+RS.END_DATE_ACTIVE,
+RS.SALESREP_NUMBER,
+RS.ORG_ID,
+RS.PERSON_ID,
+PARTIES.PARTY_ID,
+PARTIES.PARTY_NUMBER,
+PARTIES.PARTY_NAME,
+PARTIES.PARTY_TYPE,
+PARTIES.COUNTRY,
+PARTIES.ADDRESS1,
+PARTIES.ADDRESS2,
+PARTIES.ADDRESS3,
+PARTIES.ADDRESS4,
+PARTIES.CITY,
+PARTIES.POSTAL_CODE,
+PARTIES.STATE,
+PARTIES.PROVINCE,
+PARTIES.STATUS PARTIES_STATUS,
+PARTIES.COUNTY,
+PARTIES.CATEGORY_CODE,
+HZCA.CUST_ACCOUNT_ID,
+HZCA.ACCOUNT_NUMBER,
+HZCA.STATUS CUST_ACCOUNT_STATUS,
+HZCA.CUSTOMER_TYPE,
+HZCA.CUSTOMER_CLASS_CODE,
+HZCA.WAREHOUSE_ID,
+HZCA.ACCOUNT_NAME,
+HCAS.CUST_ACCT_SITE_ID,
+HCSS.SITE_USE_ID,
+HCSS.SITE_USE_CODE,
+HCSS.PRIMARY_FLAG,
+HCSS.STATUS CUST_SITE_ACCT_STATUS,
+HCSS.LOCATION SITE_LOCATION,
+HCSS.WAREHOUSE_ID CUST_SITE_USE_WAREHOUSE_ID,
+HCSS.ORG_ID CUST_SITE_USE_ORG_ID,
+HCSS.LAST_UPDATE_DATE,
+RC.CUSTOMER_NAME  CUSTOMER_NAME,
+RC.CUSTOMER_NUMBER CUSTOMER_NUMBER,
+RC.CUSTOMER_CATEGORY_CODE CUSTOMER_CATEGORY,
+RC.CUSTOMER_CLASS_CODE CUSTOMER_CLASS,
+RC.SALES_CHANNEL_CODE CUSTOMER_CHANNEL,
+PRO.PROFILE_CLASS_ID,
+COLL.COLLECTOR_ID,
+COLL.NAME COLLECTOR_NAME,
+COLL.EMPLOYEE_ID,
+COLL.DESCRIPTION,
+COLL.STATUS COLLECTOR_STAUS,
+COLL.INACTIVE_DATE ,
+COLL.ALIAS COLLECTOR_ALIAS,
+	'N' as is_deleted_flg,
+	(
+	select
+		system_id
+	from
+		bec_etl_ctrl.etlsourceappid
+	where
+		source_system = 'EBS'
+    ) as source_app_id,
+	(
+	select
+		system_id
+	from
+		bec_etl_ctrl.etlsourceappid
+	where
+		source_system = 'EBS'
+    )
+    || '-'
+       ||  nvl(HCSS.SITE_USE_ID, 0) as dw_load_id,
+	getdate() as dw_insert_date,
+	getdate() as dw_update_date
+from
+	bec_ods.JTF_RS_SALESREPS RS,
+bec_ods.HZ_PARTIES PARTIES,
+bec_ods.HZ_CUST_ACCOUNTS HZCA,
+bec_ods.HZ_CUST_ACCT_SITES_ALL HCAS,
+bec_ods.HZ_CUST_SITE_USES_ALL HCSS,
+bec_ods.AR_CUSTOMERS RC,
+bec_ods.HZ_CUSTOMER_PROFILES PRO,
+bec_ods.HZ_CUST_PROFILE_CLASSES PRC,
+bec_ods.AR_COLLECTORS COLL
+WHERE HCSS.CUST_ACCT_SITE_ID = HCAS.CUST_ACCT_SITE_ID
+AND HCAS.CUST_ACCOUNT_ID     = HZCA.CUST_ACCOUNT_ID
+AND HZCA.PARTY_ID            = PARTIES.PARTY_ID
+AND HZCA.CUST_ACCOUNT_ID     = RC.CUSTOMER_ID
+AND HCSS.PRIMARY_SALESREP_ID = RS.SALESREP_ID(+)
+AND HCSS.SITE_USE_ID         = PRO.SITE_USE_ID(+)
+AND PRO.PROFILE_CLASS_ID     = PRC.PROFILE_CLASS_ID(+)
+AND PRO.COLLECTOR_ID         = COLL.COLLECTOR_ID(+)
+AND HCSS.ORG_ID              = RS.ORG_ID(+) 
+);
+
+end;
+
+
+update
+	bec_etl_ctrl.batch_dw_info
+set
+	load_type = 'I',
+	last_refresh_date = getdate()
+where
+	dw_table_name = 'dim_ar_customer_sites'
+	and batch_name = 'ar';
+
+commit;

@@ -1,0 +1,145 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for ODS.
+# File Version: KPI v1.0
+*/
+begin;
+
+-- Delete Records
+
+delete from bec_ods.IBY_PMT_INSTR_USES_ALL
+where NVL(INSTRUMENT_PAYMENT_USE_ID,0) in (
+select NVL(stg.INSTRUMENT_PAYMENT_USE_ID,0) 
+from bec_ods.IBY_PMT_INSTR_USES_ALL ods, bec_ods_stg.IBY_PMT_INSTR_USES_ALL stg
+where ods.INSTRUMENT_PAYMENT_USE_ID = stg.INSTRUMENT_PAYMENT_USE_ID
+and stg.kca_operation IN ('INSERT','UPDATE')
+);
+
+commit;
+
+-- Insert records
+
+insert into bec_ods.IBY_PMT_INSTR_USES_ALL
+(		INSTRUMENT_PAYMENT_USE_ID,
+	PAYMENT_FLOW,
+	EXT_PMT_PARTY_ID,
+	INSTRUMENT_TYPE,
+	INSTRUMENT_ID,
+	PAYMENT_FUNCTION,
+	ORDER_OF_PREFERENCE,
+	CREATED_BY,
+	CREATION_DATE,
+	LAST_UPDATED_BY,
+	LAST_UPDATE_DATE,
+	LAST_UPDATE_LOGIN,
+	OBJECT_VERSION_NUMBER,
+	START_DATE,
+	END_DATE,
+	DEBIT_AUTH_FLAG,
+	DEBIT_AUTH_METHOD,
+	DEBIT_AUTH_REFERENCE,
+	DEBIT_AUTH_BEGIN,
+	DEBIT_AUTH_END,
+	ATTRIBUTE_CATEGORY,
+	ATTRIBUTE1,
+	ATTRIBUTE2,
+	ATTRIBUTE3,
+	ATTRIBUTE4,
+	ATTRIBUTE5,
+	ATTRIBUTE6,
+	ATTRIBUTE7,
+	ATTRIBUTE8,
+	ATTRIBUTE9,
+	ATTRIBUTE10,
+	ATTRIBUTE11,
+	ATTRIBUTE12,
+	ATTRIBUTE13,
+	ATTRIBUTE14,
+	ATTRIBUTE15
+,KCA_OPERATION
+,IS_DELETED_FLG
+,KCA_SEQ_ID,
+	kca_seq_date)
+(select
+	INSTRUMENT_PAYMENT_USE_ID,
+	PAYMENT_FLOW,
+	EXT_PMT_PARTY_ID,
+	INSTRUMENT_TYPE,
+	INSTRUMENT_ID,
+	PAYMENT_FUNCTION,
+	ORDER_OF_PREFERENCE,
+	CREATED_BY,
+	CREATION_DATE,
+	LAST_UPDATED_BY,
+	LAST_UPDATE_DATE,
+	LAST_UPDATE_LOGIN,
+	OBJECT_VERSION_NUMBER,
+	START_DATE,
+	END_DATE,
+	DEBIT_AUTH_FLAG,
+	DEBIT_AUTH_METHOD,
+	DEBIT_AUTH_REFERENCE,
+	DEBIT_AUTH_BEGIN,
+	DEBIT_AUTH_END,
+	ATTRIBUTE_CATEGORY,
+	ATTRIBUTE1,
+	ATTRIBUTE2,
+	ATTRIBUTE3,
+	ATTRIBUTE4,
+	ATTRIBUTE5,
+	ATTRIBUTE6,
+	ATTRIBUTE7,
+	ATTRIBUTE8,
+	ATTRIBUTE9,
+	ATTRIBUTE10,
+	ATTRIBUTE11,
+	ATTRIBUTE12,
+	ATTRIBUTE13,
+	ATTRIBUTE14,
+	ATTRIBUTE15
+,KCA_OPERATION
+,'N' AS IS_DELETED_FLG
+,cast(NULLIF(KCA_SEQ_ID,'') as numeric(36,0)) as KCA_SEQ_ID,
+	kca_seq_date
+from bec_ods_stg.IBY_PMT_INSTR_USES_ALL
+where kca_operation IN ('INSERT','UPDATE') 
+	and (INSTRUMENT_PAYMENT_USE_ID,kca_seq_id) in 
+	(select INSTRUMENT_PAYMENT_USE_ID,max(kca_seq_id) from bec_ods_stg.IBY_PMT_INSTR_USES_ALL 
+     where kca_operation IN ('INSERT','UPDATE')
+     group by INSTRUMENT_PAYMENT_USE_ID)
+);
+
+commit;
+ 
+
+-- Soft delete
+update bec_ods.IBY_PMT_INSTR_USES_ALL set IS_DELETED_FLG = 'N';
+commit;
+update bec_ods.IBY_PMT_INSTR_USES_ALL set IS_DELETED_FLG = 'Y'
+where (INSTRUMENT_PAYMENT_USE_ID)  in
+(
+select INSTRUMENT_PAYMENT_USE_ID from bec_raw_dl_ext.IBY_PMT_INSTR_USES_ALL
+where (INSTRUMENT_PAYMENT_USE_ID,KCA_SEQ_ID)
+in 
+(
+select INSTRUMENT_PAYMENT_USE_ID,max(KCA_SEQ_ID) as KCA_SEQ_ID 
+from bec_raw_dl_ext.IBY_PMT_INSTR_USES_ALL
+group by INSTRUMENT_PAYMENT_USE_ID
+) 
+and kca_operation= 'DELETE'
+);
+commit;
+
+end;
+
+update bec_etl_ctrl.batch_ods_info 
+set last_refresh_date = getdate() 
+where ods_table_name='iby_pmt_instr_uses_all';
+commit;

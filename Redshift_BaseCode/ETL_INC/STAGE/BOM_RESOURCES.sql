@@ -1,0 +1,155 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for stage.
+# File Version: KPI v1.0
+*/
+begin;
+
+truncate table bec_ods_stg.BOM_RESOURCES;
+
+insert into	bec_ods_stg.BOM_RESOURCES
+   (	
+	RESOURCE_ID, 
+	RESOURCE_CODE, 
+	ORGANIZATION_ID, 
+	LAST_UPDATE_DATE, 
+	LAST_UPDATED_BY, 
+	CREATION_DATE, 
+	CREATED_BY, 
+	LAST_UPDATE_LOGIN, 
+	DESCRIPTION, 
+	DISABLE_DATE, 
+	COST_ELEMENT_ID, 
+	PURCHASE_ITEM_ID, 
+	COST_CODE_TYPE, 
+	FUNCTIONAL_CURRENCY_FLAG, 
+	UNIT_OF_MEASURE, 
+	DEFAULT_ACTIVITY_ID, 
+	RESOURCE_TYPE, 
+	AUTOCHARGE_TYPE, 
+	STANDARD_RATE_FLAG, 
+	DEFAULT_BASIS_TYPE, 
+	ABSORPTION_ACCOUNT, 
+	ALLOW_COSTS_FLAG, 
+	RATE_VARIANCE_ACCOUNT, 
+	EXPENDITURE_TYPE, 
+	ATTRIBUTE_CATEGORY, 
+	ATTRIBUTE1, 
+	ATTRIBUTE2, 
+	ATTRIBUTE3, 
+	ATTRIBUTE4, 
+	ATTRIBUTE5, 
+	ATTRIBUTE6, 
+	ATTRIBUTE7, 
+	ATTRIBUTE8, 
+	ATTRIBUTE9, 
+	ATTRIBUTE10, 
+	ATTRIBUTE11, 
+	ATTRIBUTE12, 
+	ATTRIBUTE13, 
+	ATTRIBUTE14, 
+	ATTRIBUTE15, 
+	REQUEST_ID, 
+	PROGRAM_APPLICATION_ID, 
+	PROGRAM_ID, 
+	PROGRAM_UPDATE_DATE, 
+	BATCHABLE, 
+	MAX_BATCH_CAPACITY, 
+	MIN_BATCH_CAPACITY, 
+	BATCH_CAPACITY_UOM, 
+	BATCH_WINDOW, 
+	BATCH_WINDOW_UOM, 
+	COMPETENCE_ID, 
+	RATING_LEVEL_ID, 
+	QUALIFICATION_TYPE_ID, 
+	BILLABLE_ITEM_ID, 
+	SUPPLY_SUBINVENTORY, 
+	SUPPLY_LOCATOR_ID, 
+	BATCHING_PENALTY, 
+    KCA_OPERATION,
+	kca_seq_id,
+	kca_seq_date)
+(
+	select
+		RESOURCE_ID, 
+		RESOURCE_CODE, 
+		ORGANIZATION_ID, 
+		LAST_UPDATE_DATE, 
+		LAST_UPDATED_BY, 
+		CREATION_DATE, 
+		CREATED_BY, 
+		LAST_UPDATE_LOGIN, 
+		DESCRIPTION, 
+		DISABLE_DATE, 
+		COST_ELEMENT_ID, 
+		PURCHASE_ITEM_ID, 
+		COST_CODE_TYPE, 
+		FUNCTIONAL_CURRENCY_FLAG, 
+		UNIT_OF_MEASURE, 
+		DEFAULT_ACTIVITY_ID, 
+		RESOURCE_TYPE, 
+		AUTOCHARGE_TYPE, 
+		STANDARD_RATE_FLAG, 
+		DEFAULT_BASIS_TYPE, 
+		ABSORPTION_ACCOUNT, 
+		ALLOW_COSTS_FLAG, 
+		RATE_VARIANCE_ACCOUNT, 
+		EXPENDITURE_TYPE, 
+		ATTRIBUTE_CATEGORY, 
+		ATTRIBUTE1, 
+		ATTRIBUTE2, 
+		ATTRIBUTE3, 
+		ATTRIBUTE4, 
+		ATTRIBUTE5, 
+		ATTRIBUTE6, 
+		ATTRIBUTE7, 
+		ATTRIBUTE8, 
+		ATTRIBUTE9, 
+		ATTRIBUTE10, 
+		ATTRIBUTE11, 
+		ATTRIBUTE12, 
+		ATTRIBUTE13, 
+		ATTRIBUTE14, 
+		ATTRIBUTE15, 
+		REQUEST_ID, 
+		PROGRAM_APPLICATION_ID, 
+		PROGRAM_ID, 
+		PROGRAM_UPDATE_DATE, 
+		BATCHABLE, 
+		MAX_BATCH_CAPACITY, 
+		MIN_BATCH_CAPACITY, 
+		BATCH_CAPACITY_UOM, 
+		BATCH_WINDOW, 
+		BATCH_WINDOW_UOM, 
+		COMPETENCE_ID, 
+		RATING_LEVEL_ID, 
+		QUALIFICATION_TYPE_ID, 
+		BILLABLE_ITEM_ID, 
+		SUPPLY_SUBINVENTORY, 
+		SUPPLY_LOCATOR_ID, 
+		BATCHING_PENALTY, 
+        KCA_OPERATION,
+		kca_seq_id,
+		kca_seq_date
+	from bec_raw_dl_ext.BOM_RESOURCES
+	where kca_operation != 'DELETE' and nvl(kca_seq_id,'')!= '' 
+	and (nvl(RESOURCE_ID,0),kca_seq_id) in 
+	(select nvl(RESOURCE_ID,0),max(kca_seq_id) from bec_raw_dl_ext.BOM_RESOURCES 
+     where kca_operation != 'DELETE' and nvl(kca_seq_id,'')!= ''
+     group by nvl(RESOURCE_ID,0))
+        and	kca_seq_date > (
+		select
+			(executebegints-prune_days)
+		from
+			bec_etl_ctrl.batch_ods_info
+		where
+			ods_table_name = 'bom_resources')
+);
+end;

@@ -1,0 +1,267 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents full load approach for Facts.
+# File Version: KPI v1.0
+*/
+begin;
+
+drop table if exists bec_dwh.FACT_BS_BUDGET_ACTIVITY;
+
+create table bec_dwh.FACT_BS_BUDGET_ACTIVITY diststyle all
+sortkey (ledger_id,period_name,code_combination_id) 
+as (
+select
+	gbs.ledger_id as ledger_id,
+	gbs.chart_of_accounts_id as chart_of_accounts_id,
+	gbs.currency_code as currency_code,
+	gbs.code_combination_id as code_combination_id,
+	gbs.ledger_id || '-' || gbs.period_name as period_name,
+	gbs.period_name as gl_period,
+	gbs.period_year as period_year,
+	gbs.actual_flag,
+	gbs.translated_flag,
+	gbs.budget_version_id,
+	gbs.account_type as account_type,
+	gbs.coa_segval3 as coa_segval3,
+	gbs.coa_segval2 as coa_segval2,
+	gbs.coa_segval1 as coa_segval1,
+	gbs.coa_segval4 as coa_segval4,
+	gbs.coa_segval5 as coa_segval5,
+	gbs.coa_segval6 as coa_segval6,
+	gbs.coa_segval7 as coa_segval7,
+	gbs.coa_segval8 as coa_segval8,
+	gbs.coa_segval9 as coa_segval9,
+	gbs.coa_segval10 as coa_segval10,
+	gbs.segment1 as segment1,
+	gbs.segment2 as segment2,
+	gbs.segment3 as segment3,
+	gbs.segment4 as segment4,
+	gbs.segment5 as segment5,
+	gbs.segment6 as segment6,
+	gbs.segment7 as segment7,
+	gbs.segment8 as segment8,
+	gbs.segment9 as segment9,
+	gbs.segment10 as segment10,
+	decode(gbs.actual_flag, 'A', ((-nvl(gbs.period_net_dr, 0) + nvl(gbs.period_net_cr, 0))/ 1000), 0) as actual_amount_in_k,
+	0 as budget_amount_in_k,
+	-- audit columns
+	'N' as is_deleted_flg,
+	(
+	select
+		system_id
+	from
+		bec_etl_ctrl.etlsourceappid
+	where
+		source_system = 'EBS') as source_app_id,
+	(
+	select
+		system_id
+	from
+		bec_etl_ctrl.etlsourceappid
+	where
+		source_system = 'EBS')
+		|| '-' || nvl(gbs.ledger_id,0)
+		|| '-' || nvl(gbs.currency_code,'NA')
+		|| '-' || nvl(upper(gbs.period_name),'NA')
+		|| '-' || nvl(gbs.actual_flag,'X')
+		|| '-' || nvl(gbs.code_combination_id,0)
+		|| '-' || nvl(gbs.translated_flag, 'X')
+		|| '-' || nvl(gbs.budget_version_id, 0)
+		as dw_load_id,
+	getdate() as dw_insert_date,
+	getdate() as dw_update_date
+from
+	(
+	select
+		gb.ledger_id,
+		gb.currency_code,
+		upper(gb.period_name) "period_name",
+		gb.period_year,
+		gb.actual_flag,
+		gb.encumbrance_type_id,
+		gb.translated_flag,
+		gb.budget_version_id,
+		gcc.account_type,
+		gcc.code_combination_id,
+		gcc.chart_of_accounts_id,
+		gb.period_num,
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment1, '00') "coa_segval1",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment2, '00') "coa_segval2",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment3, '00') "coa_segval3",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment4, '00') "coa_segval4",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment5, '00') "coa_segval5",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment6, '00') "coa_segval6",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment7, '00') "coa_segval7",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment8, '00') "coa_segval8",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment9, '00') "coa_segval9",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment10, '00') "coa_segval10",
+		gcc.segment1,
+		gcc.segment2,
+		gcc.segment3,
+		gcc.segment4,
+		gcc.segment5,
+		gcc.segment6,
+		gcc.segment7,
+		gcc.segment8,
+		gcc.segment9,
+		gcc.segment10,
+		gb.period_net_cr,
+		gb.period_net_dr,
+		gb.quarter_to_date_cr,
+		gb.quarter_to_date_dr,
+		gb.project_to_date_cr,
+		gb.project_to_date_dr,
+		gb.begin_balance_cr,
+		gb.begin_balance_dr
+	from
+		(select * from bec_ods.gl_balances where is_deleted_flg <> 'Y')  gb
+	inner join (select * from bec_ods.gl_code_combinations where is_deleted_flg <> 'Y')  gcc
+on
+		gb.code_combination_id = gcc.code_combination_id
+	where
+		1 = 1
+		and gcc.summary_flag = 'N'
+		and gb.actual_flag = 'A'
+) gbs
+where
+	1 = 1
+	and gbs.account_type in ('A', 'L', 'O')
+union all
+
+select 
+	gbs.ledger_id as ledger_id,
+	gbs.chart_of_accounts_id as chart_of_accounts_id,
+	gbs.currency_code as currency_code,
+	gbs.code_combination_id as code_combination_id,
+	gbs.ledger_id || '-' || gbs.period_name as period_name,
+	gbs.period_name as gl_period,
+	gbs.period_year as period_year,
+	gbs.actual_flag,
+	gbs.translated_flag,
+	gbs.budget_version_id,
+	gbs.account_type as account_type,
+	gbs.coa_segval3 as coa_segval3,
+	gbs.coa_segval2 as coa_segval2,
+	gbs.coa_segval1 as coa_segval1,
+	gbs.coa_segval4 as coa_segval4,
+	gbs.coa_segval5 as coa_segval5,
+	gbs.coa_segval6 as coa_segval6,
+	gbs.coa_segval7 as coa_segval7,
+	gbs.coa_segval8 as coa_segval8,
+	gbs.coa_segval9 as coa_segval9,
+	gbs.coa_segval10 as coa_segval10,
+	gbs.segment1 as segment1,
+	gbs.segment2 as segment2,
+	gbs.segment3 as segment3,
+	gbs.segment4 as segment4,
+	gbs.segment5 as segment5,
+	gbs.segment6 as segment6,
+	gbs.segment7 as segment7,
+	gbs.segment8 as segment8,
+	gbs.segment9 as segment9,
+	gbs.segment10 as segment10,
+	0 as actual_amount_in_k,
+	decode(gbs.actual_flag, 'B', ((-nvl(gbs.period_net_dr, 0) - nvl(gbs.begin_balance_dr, 0) + nvl(gbs.begin_balance_cr, 0)+ nvl(gbs.period_net_cr, 0))/ 1000), 0) as budget_amount_in_k,
+	-- audit columns
+	'N' as is_deleted_flg,
+	(
+	select
+		system_id
+	from
+		bec_etl_ctrl.etlsourceappid
+	where
+		source_system = 'EBS') as source_app_id,
+	(
+	select
+		system_id
+	from
+		bec_etl_ctrl.etlsourceappid
+	where
+		source_system = 'EBS')
+		|| '-' || nvl(gbs.ledger_id,0)
+		|| '-' || nvl(gbs.currency_code,'NA')
+		|| '-' || nvl(upper(gbs.period_name),'NA')
+		|| '-' || nvl(gbs.actual_flag,'X')
+		|| '-' || nvl(gbs.code_combination_id,0)
+		|| '-' || nvl(gbs.translated_flag, 'X')
+		|| '-' || nvl(gbs.budget_version_id, 0)
+		as dw_load_id,
+	getdate() as dw_insert_date,
+	getdate() as dw_update_date
+from
+	(
+	select
+		gb.ledger_id,
+		gb.currency_code,
+		upper(gb.period_name) "period_name",
+		gb.period_year,
+		gb.encumbrance_type_id,
+		gb.actual_flag,
+		gb.translated_flag,
+		gb.budget_version_id,
+		gcc.account_type,
+		gcc.code_combination_id,
+		gcc.chart_of_accounts_id,
+		gb.period_num,
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment1, '00') "coa_segval1",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment2, '00') "coa_segval2",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment3, '00') "coa_segval3",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment4, '00') "coa_segval4",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment5, '00') "coa_segval5",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment6, '00') "coa_segval6",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment7, '00') "coa_segval7",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment8, '00') "coa_segval8",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment9, '00') "coa_segval9",
+		gcc.chart_of_accounts_id || '-' || nvl(gcc.segment10, '00') "coa_segval10",
+		gcc.segment1,
+		gcc.segment2,
+		gcc.segment3,
+		gcc.segment4,
+		gcc.segment5,
+		gcc.segment6,
+		gcc.segment7,
+		gcc.segment8,
+		gcc.segment9,
+		gcc.segment10,
+		gb.period_net_cr,
+		gb.period_net_dr,
+		gb.quarter_to_date_cr,
+		gb.quarter_to_date_dr,
+		gb.project_to_date_cr,
+		gb.project_to_date_dr,
+		gb.begin_balance_cr,
+		gb.begin_balance_dr
+	from
+		(select * from bec_ods.gl_balances where is_deleted_flg <> 'Y')  gb
+	inner join (select * from bec_ods.gl_code_combinations where is_deleted_flg <> 'Y')  gcc
+on
+		gb.code_combination_id = gcc.code_combination_id
+	where
+		1 = 1
+		and gcc.summary_flag = 'N'
+		and gb.actual_flag = 'B'
+) gbs
+where
+	1 = 1
+	and gbs.account_type in ('A', 'L', 'O')
+);
+
+END;
+
+update
+	bec_etl_ctrl.batch_dw_info
+set
+	load_type = 'I',
+	last_refresh_date = getdate()
+where
+	dw_table_name = 'fact_bs_budget_activity'
+	and batch_name = 'gl';
+
+commit;

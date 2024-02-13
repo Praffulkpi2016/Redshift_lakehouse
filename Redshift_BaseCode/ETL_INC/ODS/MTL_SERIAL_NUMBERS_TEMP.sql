@@ -1,0 +1,363 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for ODS.
+# File Version: KPI v1.0
+*/
+begin;
+
+-- Delete Records
+
+delete from bec_ods.mtl_serial_numbers_temp
+where (TRANSACTION_TEMP_ID,FM_SERIAL_NUMBER) in (
+select stg.TRANSACTION_TEMP_ID,stg.FM_SERIAL_NUMBER from bec_ods.mtl_serial_numbers_temp ods, bec_ods_stg.mtl_serial_numbers_temp stg
+where ods.TRANSACTION_TEMP_ID = stg.TRANSACTION_TEMP_ID and ods.FM_SERIAL_NUMBER = stg.FM_SERIAL_NUMBER and stg.kca_operation IN ('INSERT','UPDATE')
+);
+
+commit;
+
+-- Insert records
+
+insert into	bec_ods.mtl_serial_numbers_temp
+       (
+	  TRANSACTION_TEMP_ID
+,      LAST_UPDATE_DATE
+,      LAST_UPDATED_BY
+,      CREATION_DATE
+,      CREATED_BY
+,      LAST_UPDATE_LOGIN
+,      REQUEST_ID
+,      PROGRAM_APPLICATION_ID
+,      PROGRAM_ID
+,      PROGRAM_UPDATE_DATE
+,      VENDOR_SERIAL_NUMBER
+,      VENDOR_LOT_NUMBER
+,      FM_SERIAL_NUMBER
+,      TO_SERIAL_NUMBER
+,      SERIAL_PREFIX
+,      ERROR_CODE
+,      PARENT_SERIAL_NUMBER
+,      GROUP_HEADER_ID
+,      END_ITEM_UNIT_NUMBER
+,      SERIAL_ATTRIBUTE_CATEGORY
+,      COUNTRY_OF_ORIGIN
+,      ORIGINATION_DATE
+,      C_ATTRIBUTE1
+,      C_ATTRIBUTE2
+,      C_ATTRIBUTE3
+,      C_ATTRIBUTE4
+,      C_ATTRIBUTE5
+,      C_ATTRIBUTE6
+,      C_ATTRIBUTE7
+,      C_ATTRIBUTE8
+,      C_ATTRIBUTE9
+,      C_ATTRIBUTE10
+,      C_ATTRIBUTE11
+,      C_ATTRIBUTE12
+,      C_ATTRIBUTE13
+,      C_ATTRIBUTE14
+,      C_ATTRIBUTE15
+,      C_ATTRIBUTE16
+,      C_ATTRIBUTE17
+,      C_ATTRIBUTE18
+,      C_ATTRIBUTE19
+,      C_ATTRIBUTE20
+,      C_ATTRIBUTE21
+,      C_ATTRIBUTE22
+,      C_ATTRIBUTE23
+,      C_ATTRIBUTE24
+,      C_ATTRIBUTE25
+,      C_ATTRIBUTE26
+,      C_ATTRIBUTE27
+,      C_ATTRIBUTE28
+,      C_ATTRIBUTE29
+,      C_ATTRIBUTE30
+,      D_ATTRIBUTE1
+,      D_ATTRIBUTE2
+,      D_ATTRIBUTE3
+,      D_ATTRIBUTE4
+,      D_ATTRIBUTE5
+,      D_ATTRIBUTE6
+,      D_ATTRIBUTE7
+,      D_ATTRIBUTE8
+,      D_ATTRIBUTE9
+,      D_ATTRIBUTE10
+,      D_ATTRIBUTE11
+,      D_ATTRIBUTE12
+,      D_ATTRIBUTE13
+,      D_ATTRIBUTE14
+,      D_ATTRIBUTE15
+,      D_ATTRIBUTE16
+,      D_ATTRIBUTE17
+,      D_ATTRIBUTE18
+,      D_ATTRIBUTE19
+,      D_ATTRIBUTE20
+,      N_ATTRIBUTE1
+,      N_ATTRIBUTE2
+,      N_ATTRIBUTE3
+,      N_ATTRIBUTE4
+,      N_ATTRIBUTE5
+,      N_ATTRIBUTE6
+,      N_ATTRIBUTE7
+,      N_ATTRIBUTE8
+,      N_ATTRIBUTE9
+,      N_ATTRIBUTE10
+,      N_ATTRIBUTE11
+,      N_ATTRIBUTE12
+,      N_ATTRIBUTE13
+,      N_ATTRIBUTE14
+,      N_ATTRIBUTE15
+,      N_ATTRIBUTE16
+,      N_ATTRIBUTE17
+,      N_ATTRIBUTE18
+,      N_ATTRIBUTE19
+,      N_ATTRIBUTE20
+,      N_ATTRIBUTE21
+,      N_ATTRIBUTE22
+,      N_ATTRIBUTE23
+,      N_ATTRIBUTE24
+,      N_ATTRIBUTE25
+,      N_ATTRIBUTE26
+,      N_ATTRIBUTE27
+,      N_ATTRIBUTE28
+,      N_ATTRIBUTE29
+,      N_ATTRIBUTE30
+,      STATUS_ID
+,      TERRITORY_CODE
+,      TIME_SINCE_NEW
+,      CYCLES_SINCE_NEW
+,      TIME_SINCE_OVERHAUL
+,      CYCLES_SINCE_OVERHAUL
+,      TIME_SINCE_REPAIR
+,      CYCLES_SINCE_REPAIR
+,      TIME_SINCE_VISIT
+,      CYCLES_SINCE_VISIT
+,      TIME_SINCE_MARK
+,      CYCLES_SINCE_MARK
+,      NUMER_OF_REPAIRS
+,      NUMBER_OF_REPAIRS
+,      PRODUCT_CODE
+,      PRODUCT_TRANSACTION_ID
+,      ATTRIBUTE_CATEGORY
+,      ATTRIBUTE1
+,      ATTRIBUTE2
+,      ATTRIBUTE3
+,      ATTRIBUTE4
+,      ATTRIBUTE5
+,      ATTRIBUTE6
+,      ATTRIBUTE7
+,      ATTRIBUTE8
+,      ATTRIBUTE9
+,      ATTRIBUTE10
+,      ATTRIBUTE11
+,      ATTRIBUTE12
+,      ATTRIBUTE13
+,      ATTRIBUTE14
+,      ATTRIBUTE15
+,      DFF_UPDATED_FLAG
+,      PARENT_OBJECT_TYPE
+,      PARENT_OBJECT_ID
+,      PARENT_OBJECT_NUMBER
+,      PARENT_ITEM_ID
+,      PARENT_OBJECT_TYPE2
+,      PARENT_OBJECT_ID2
+,      PARENT_OBJECT_NUMBER2
+,      OBJECT_TYPE2
+,      OBJECT_NUMBER2
+,      LAST_CONSUMED_SERIAL
+ ,       KCA_OPERATION,
+        IS_DELETED_FLG,
+		kca_seq_id,
+		kca_seq_date)	
+(
+	select
+		 TRANSACTION_TEMP_ID
+,      LAST_UPDATE_DATE
+,      LAST_UPDATED_BY
+,      CREATION_DATE
+,      CREATED_BY
+,      LAST_UPDATE_LOGIN
+,      REQUEST_ID
+,      PROGRAM_APPLICATION_ID
+,      PROGRAM_ID
+,      PROGRAM_UPDATE_DATE
+,      VENDOR_SERIAL_NUMBER
+,      VENDOR_LOT_NUMBER
+,      FM_SERIAL_NUMBER
+,      TO_SERIAL_NUMBER
+,      SERIAL_PREFIX
+,      ERROR_CODE
+,      PARENT_SERIAL_NUMBER
+,      GROUP_HEADER_ID
+,      END_ITEM_UNIT_NUMBER
+,      SERIAL_ATTRIBUTE_CATEGORY
+,      COUNTRY_OF_ORIGIN
+,      ORIGINATION_DATE
+,      C_ATTRIBUTE1
+,      C_ATTRIBUTE2
+,      C_ATTRIBUTE3
+,      C_ATTRIBUTE4
+,      C_ATTRIBUTE5
+,      C_ATTRIBUTE6
+,      C_ATTRIBUTE7
+,      C_ATTRIBUTE8
+,      C_ATTRIBUTE9
+,      C_ATTRIBUTE10
+,      C_ATTRIBUTE11
+,      C_ATTRIBUTE12
+,      C_ATTRIBUTE13
+,      C_ATTRIBUTE14
+,      C_ATTRIBUTE15
+,      C_ATTRIBUTE16
+,      C_ATTRIBUTE17
+,      C_ATTRIBUTE18
+,      C_ATTRIBUTE19
+,      C_ATTRIBUTE20
+,      C_ATTRIBUTE21
+,      C_ATTRIBUTE22
+,      C_ATTRIBUTE23
+,      C_ATTRIBUTE24
+,      C_ATTRIBUTE25
+,      C_ATTRIBUTE26
+,      C_ATTRIBUTE27
+,      C_ATTRIBUTE28
+,      C_ATTRIBUTE29
+,      C_ATTRIBUTE30
+,      D_ATTRIBUTE1
+,      D_ATTRIBUTE2
+,      D_ATTRIBUTE3
+,      D_ATTRIBUTE4
+,      D_ATTRIBUTE5
+,      D_ATTRIBUTE6
+,      D_ATTRIBUTE7
+,      D_ATTRIBUTE8
+,      D_ATTRIBUTE9
+,      D_ATTRIBUTE10
+,      D_ATTRIBUTE11
+,      D_ATTRIBUTE12
+,      D_ATTRIBUTE13
+,      D_ATTRIBUTE14
+,      D_ATTRIBUTE15
+,      D_ATTRIBUTE16
+,      D_ATTRIBUTE17
+,      D_ATTRIBUTE18
+,      D_ATTRIBUTE19
+,      D_ATTRIBUTE20
+,      N_ATTRIBUTE1
+,      N_ATTRIBUTE2
+,      N_ATTRIBUTE3
+,      N_ATTRIBUTE4
+,      N_ATTRIBUTE5
+,      N_ATTRIBUTE6
+,      N_ATTRIBUTE7
+,      N_ATTRIBUTE8
+,      N_ATTRIBUTE9
+,      N_ATTRIBUTE10
+,      N_ATTRIBUTE11
+,      N_ATTRIBUTE12
+,      N_ATTRIBUTE13
+,      N_ATTRIBUTE14
+,      N_ATTRIBUTE15
+,      N_ATTRIBUTE16
+,      N_ATTRIBUTE17
+,      N_ATTRIBUTE18
+,      N_ATTRIBUTE19
+,      N_ATTRIBUTE20
+,      N_ATTRIBUTE21
+,      N_ATTRIBUTE22
+,      N_ATTRIBUTE23
+,      N_ATTRIBUTE24
+,      N_ATTRIBUTE25
+,      N_ATTRIBUTE26
+,      N_ATTRIBUTE27
+,      N_ATTRIBUTE28
+,      N_ATTRIBUTE29
+,      N_ATTRIBUTE30
+,      STATUS_ID
+,      TERRITORY_CODE
+,      TIME_SINCE_NEW
+,      CYCLES_SINCE_NEW
+,      TIME_SINCE_OVERHAUL
+,      CYCLES_SINCE_OVERHAUL
+,      TIME_SINCE_REPAIR
+,      CYCLES_SINCE_REPAIR
+,      TIME_SINCE_VISIT
+,      CYCLES_SINCE_VISIT
+,      TIME_SINCE_MARK
+,      CYCLES_SINCE_MARK
+,      NUMER_OF_REPAIRS
+,      NUMBER_OF_REPAIRS
+,      PRODUCT_CODE
+,      PRODUCT_TRANSACTION_ID
+,      ATTRIBUTE_CATEGORY
+,      ATTRIBUTE1
+,      ATTRIBUTE2
+,      ATTRIBUTE3
+,      ATTRIBUTE4
+,      ATTRIBUTE5
+,      ATTRIBUTE6
+,      ATTRIBUTE7
+,      ATTRIBUTE8
+,      ATTRIBUTE9
+,      ATTRIBUTE10
+,      ATTRIBUTE11
+,      ATTRIBUTE12
+,      ATTRIBUTE13
+,      ATTRIBUTE14
+,      ATTRIBUTE15
+,      DFF_UPDATED_FLAG
+,      PARENT_OBJECT_TYPE
+,      PARENT_OBJECT_ID
+,      PARENT_OBJECT_NUMBER
+,      PARENT_ITEM_ID
+,      PARENT_OBJECT_TYPE2
+,      PARENT_OBJECT_ID2
+,      PARENT_OBJECT_NUMBER2
+,      OBJECT_TYPE2
+,      OBJECT_NUMBER2
+,      LAST_CONSUMED_SERIAL
+ ,       KCA_OPERATION,
+       'N' AS IS_DELETED_FLG,
+	    cast(NULLIF(KCA_SEQ_ID,'') as numeric(36,0)) as KCA_SEQ_ID,
+		kca_seq_date
+	from bec_ods_stg.mtl_serial_numbers_temp
+	where kca_operation IN ('INSERT','UPDATE') 
+	and (TRANSACTION_TEMP_ID,FM_SERIAL_NUMBER,kca_seq_id) in 
+	(select TRANSACTION_TEMP_ID,FM_SERIAL_NUMBER,max(kca_seq_id) from bec_ods_stg.mtl_serial_numbers_temp 
+     where kca_operation IN ('INSERT','UPDATE')
+     group by TRANSACTION_TEMP_ID,FM_SERIAL_NUMBER)
+);
+
+commit;
+
+-- Soft delete
+update bec_ods.mtl_serial_numbers_temp set IS_DELETED_FLG = 'N';
+commit;
+update bec_ods.mtl_serial_numbers_temp set IS_DELETED_FLG = 'Y'
+where (TRANSACTION_TEMP_ID,FM_SERIAL_NUMBER)  in
+(
+select TRANSACTION_TEMP_ID,FM_SERIAL_NUMBER from bec_raw_dl_ext.mtl_serial_numbers_temp
+where (TRANSACTION_TEMP_ID,FM_SERIAL_NUMBER,KCA_SEQ_ID)
+in 
+(
+select TRANSACTION_TEMP_ID,FM_SERIAL_NUMBER,max(KCA_SEQ_ID) as KCA_SEQ_ID 
+from bec_raw_dl_ext.mtl_serial_numbers_temp
+group by TRANSACTION_TEMP_ID,FM_SERIAL_NUMBER
+) 
+and kca_operation= 'DELETE'
+);
+commit;
+
+end;
+
+update bec_etl_ctrl.batch_ods_info
+set	last_refresh_date = getdate()
+where ods_table_name = 'mtl_serial_numbers_temp'; 
+
+commit;

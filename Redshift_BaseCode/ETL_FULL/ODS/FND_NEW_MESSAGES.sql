@@ -1,0 +1,102 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents full load approach for ODS.
+# File Version: KPI v1.0
+*/
+
+begin;
+
+DROP TABLE if exists bec_ods.fnd_new_messages;
+
+CREATE TABLE IF NOT EXISTS bec_ods.fnd_new_messages
+(
+	APPLICATION_ID NUMERIC(15,0)   ENCODE az64
+	,LANGUAGE_CODE VARCHAR(4)   ENCODE lzo
+	,MESSAGE_NUMBER NUMERIC(9,0)   ENCODE az64
+	,MESSAGE_NAME VARCHAR(30)   ENCODE lzo
+	,MESSAGE_TEXT VARCHAR(2000)   ENCODE lzo
+	,CREATION_DATE TIMESTAMP WITHOUT TIME ZONE   ENCODE az64
+	,CREATED_BY NUMERIC(15,0)   ENCODE az64
+	,LAST_UPDATE_DATE TIMESTAMP WITHOUT TIME ZONE   ENCODE az64	
+	,LAST_UPDATED_BY NUMERIC(15,0)   ENCODE az64
+	,LAST_UPDATE_LOGIN NUMERIC(15,0)   ENCODE az64
+	,DESCRIPTION VARCHAR(240)   ENCODE lzo
+	,TYPE VARCHAR(30)   ENCODE lzo
+	,MAX_LENGTH NUMERIC(28,10)   ENCODE az64
+	,CATEGORY VARCHAR(10)   ENCODE lzo
+	,SEVERITY VARCHAR(10)   ENCODE lzo
+	,FND_LOG_SEVERITY NUMERIC(28,10)   ENCODE az64
+	,ZD_EDITION_NAME VARCHAR(30)   ENCODE lzo	
+	,ZD_SYNC VARCHAR(30)   ENCODE lzo
+	,KCA_OPERATION VARCHAR(10)   ENCODE lzo
+    ,IS_DELETED_FLG VARCHAR(2) ENCODE lzo
+	,kca_seq_id NUMERIC(36,0)   ENCODE az64
+	,kca_seq_date TIMESTAMP WITHOUT TIME ZONE   ENCODE az64  ) 
+DISTSTYLE
+auto;
+
+INSERT INTO bec_ods.fnd_new_messages (
+	APPLICATION_ID,
+	LANGUAGE_CODE,
+	MESSAGE_NUMBER,
+	MESSAGE_NAME,
+	MESSAGE_TEXT,
+	CREATION_DATE,
+	CREATED_BY,
+	LAST_UPDATE_DATE,
+	LAST_UPDATED_BY,
+	LAST_UPDATE_LOGIN,
+	DESCRIPTION,
+	TYPE,
+	MAX_LENGTH,
+	CATEGORY,
+	SEVERITY,
+	FND_LOG_SEVERITY,
+	ZD_EDITION_NAME,
+	ZD_SYNC,
+	KCA_OPERATION,
+	IS_DELETED_FLG,
+	kca_seq_id,
+	kca_seq_date
+)
+    SELECT
+		APPLICATION_ID,
+		LANGUAGE_CODE,
+		MESSAGE_NUMBER,
+		MESSAGE_NAME,
+		MESSAGE_TEXT,
+		CREATION_DATE,
+		CREATED_BY,
+		LAST_UPDATE_DATE,
+		LAST_UPDATED_BY,
+		LAST_UPDATE_LOGIN,
+		DESCRIPTION,
+		TYPE,
+		MAX_LENGTH,
+		CATEGORY,
+		SEVERITY,
+		FND_LOG_SEVERITY,
+		ZD_EDITION_NAME,
+		ZD_SYNC,
+		KCA_OPERATION,
+		'N' as IS_DELETED_FLG,
+		cast(NULLIF(KCA_SEQ_ID,'') as numeric(36,0)) as KCA_SEQ_ID
+		,kca_seq_date
+    FROM
+        bec_ods_stg.fnd_new_messages;
+
+end;		
+
+UPDATE bec_etl_ctrl.batch_ods_info
+SET
+    load_type = 'I',
+    last_refresh_date = getdate()
+WHERE
+    ods_table_name = 'fnd_new_messages';

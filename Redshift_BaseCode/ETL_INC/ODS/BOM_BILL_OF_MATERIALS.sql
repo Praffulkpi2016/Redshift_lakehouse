@@ -1,0 +1,139 @@
+/*
+	# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+	#
+	# Unless required by applicable law or agreed to in writing, software
+	# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+	# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	#
+	# author: KPI Partners, Inc.
+	# version: 2022.06
+	# description: This script represents incremental approach for ODS.
+	# File Version: KPI v1.0
+*/
+begin;
+truncate table bec_ods.BOM_BILL_OF_MATERIALS;
+	
+	insert into bec_ods.bom_bill_of_materials
+	(
+		ASSEMBLY_ITEM_ID,
+		ORGANIZATION_ID,
+		ALTERNATE_BOM_DESIGNATOR,
+		LAST_UPDATE_DATE,
+		LAST_UPDATED_BY,
+		CREATION_DATE,
+		CREATED_BY,
+		LAST_UPDATE_LOGIN,
+		COMMON_ASSEMBLY_ITEM_ID,
+		SPECIFIC_ASSEMBLY_COMMENT,
+		PENDING_FROM_ECN,
+		ATTRIBUTE_CATEGORY,
+		ATTRIBUTE1,
+		ATTRIBUTE2,
+		ATTRIBUTE3,
+		ATTRIBUTE4,
+		ATTRIBUTE5,
+		ATTRIBUTE6,
+		ATTRIBUTE7,
+		ATTRIBUTE8,
+		ATTRIBUTE9,
+		ATTRIBUTE10,
+		ATTRIBUTE11,
+		ATTRIBUTE12,
+		ATTRIBUTE13,
+		ATTRIBUTE14,
+		ATTRIBUTE15,
+		ASSEMBLY_TYPE,
+		COMMON_BILL_SEQUENCE_ID,
+		BILL_SEQUENCE_ID,
+		REQUEST_ID,
+		PROGRAM_APPLICATION_ID,
+		PROGRAM_ID,
+		PROGRAM_UPDATE_DATE,
+		COMMON_ORGANIZATION_ID,
+		NEXT_EXPLODE_DATE,
+		PROJECT_ID,
+		TASK_ID,
+		ORIGINAL_SYSTEM_REFERENCE,
+		STRUCTURE_TYPE_ID,
+		IMPLEMENTATION_DATE,
+		OBJ_NAME,
+		PK1_VALUE,
+		PK2_VALUE,
+		PK3_VALUE,
+		PK4_VALUE,
+		PK5_VALUE,
+		EFFECTIVITY_CONTROL,
+		IS_PREFERRED,
+		SOURCE_BILL_SEQUENCE_ID,
+		kca_operation,
+		is_deleted_flg,
+		kca_seq_id,
+		kca_seq_date
+	)
+	(
+		select 
+		ASSEMBLY_ITEM_ID,
+		ORGANIZATION_ID,
+		ALTERNATE_BOM_DESIGNATOR,
+		LAST_UPDATE_DATE,
+		LAST_UPDATED_BY,
+		CREATION_DATE,
+		CREATED_BY,
+		LAST_UPDATE_LOGIN,
+		COMMON_ASSEMBLY_ITEM_ID,
+		SPECIFIC_ASSEMBLY_COMMENT,
+		PENDING_FROM_ECN,
+		ATTRIBUTE_CATEGORY,
+		ATTRIBUTE1,
+		ATTRIBUTE2,
+		ATTRIBUTE3,
+		ATTRIBUTE4,
+		ATTRIBUTE5,
+		ATTRIBUTE6,
+		ATTRIBUTE7,
+		ATTRIBUTE8,
+		ATTRIBUTE9,
+		ATTRIBUTE10,
+		ATTRIBUTE11,
+		ATTRIBUTE12,
+		ATTRIBUTE13,
+		ATTRIBUTE14,
+		ATTRIBUTE15,
+		ASSEMBLY_TYPE,
+		COMMON_BILL_SEQUENCE_ID,
+		BILL_SEQUENCE_ID,
+		REQUEST_ID,
+		PROGRAM_APPLICATION_ID,
+		PROGRAM_ID,
+		PROGRAM_UPDATE_DATE,
+		COMMON_ORGANIZATION_ID,
+		NEXT_EXPLODE_DATE,
+		PROJECT_ID,
+		TASK_ID,
+		ORIGINAL_SYSTEM_REFERENCE,
+		STRUCTURE_TYPE_ID,
+		IMPLEMENTATION_DATE,
+		OBJ_NAME,
+		PK1_VALUE,
+		PK2_VALUE,
+		PK3_VALUE,
+		PK4_VALUE,
+		PK5_VALUE,
+		EFFECTIVITY_CONTROL,
+		IS_PREFERRED,
+		SOURCE_BILL_SEQUENCE_ID,
+		kca_operation,
+		'N' as IS_DELETED_FLG,
+		cast(NULLIF(KCA_SEQ_ID,'') as numeric(36,0)) as KCA_SEQ_ID,
+		kca_seq_date
+		from bec_ods_stg.bom_bill_of_materials
+	);
+	
+end;
+
+update bec_etl_ctrl.batch_ods_info 
+set load_type = 'I', 
+last_refresh_date = getdate() 
+where ods_table_name='bom_bill_of_materials'; 
+
+commit;

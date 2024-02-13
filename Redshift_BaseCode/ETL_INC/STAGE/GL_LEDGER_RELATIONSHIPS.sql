@@ -1,0 +1,112 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for stage.
+# File Version: KPI v1.0
+*/
+BEGIN;
+
+TRUNCATE TABLE bec_ods_stg.GL_LEDGER_RELATIONSHIPS;
+
+insert into	bec_ods_stg.GL_LEDGER_RELATIONSHIPS
+    (
+	RELATIONSHIP_ID,
+    SOURCE_LEDGER_ID, 
+    TARGET_LEDGER_ID,
+    SLA_LEDGER_ID, 
+    PRIMARY_LEDGER_ID,
+    TARGET_CURRENCY_CODE,
+    TARGET_LEDGER_NAME, 
+    TARGET_LEDGER_SHORT_NAME,
+    TARGET_LEDGER_CATEGORY_CODE, 
+    RELATIONSHIP_TYPE_CODE,
+    RELATIONSHIP_ENABLED_FLAG,
+    INHERIT_CREATION_USER_FLAG,
+    LAST_UPDATE_DATE, 
+    LAST_UPDATED_BY, 
+    CREATION_DATE, 
+    CREATED_BY, 
+    LAST_UPDATE_LOGIN,
+    GL_JE_CONVERSION_SET_ID, 
+    SL_COA_MAPPING_ID,
+    AUTOMATIC_POST_FLAG, 
+    ALC_DEFAULT_CONV_RATE_TYPE,
+    ALC_NO_RATE_ACTION_CODE,
+    ALC_MAX_DAYS_ROLL_RATE, 
+    ALC_INHERIT_CONVERSION_TYPE,
+    ALC_INIT_CONV_OPTION_CODE,
+    ALC_INIT_PERIOD,
+    ALC_INIT_DATE, 
+    ALC_INITIALIZING_RATE_DATE,
+    ALC_INITIALIZING_RATE_TYPE,
+    ALC_PERIOD_AVERAGE_RATE_TYPE, 
+    ALC_PERIOD_END_RATE_TYPE,
+    APPLICATION_ID, 
+    ORG_ID, 
+    DISABLE_CONVERSION_DATE,
+    STATUS_CODE, 
+    HIST_CONV_STATUS_CODE,
+	KCA_OPERATION,
+	KCA_SEQ_ID,
+	kca_seq_date
+	)
+(select
+    RELATIONSHIP_ID,
+    SOURCE_LEDGER_ID, 
+    TARGET_LEDGER_ID,
+    SLA_LEDGER_ID, 
+    PRIMARY_LEDGER_ID,
+    TARGET_CURRENCY_CODE,
+    TARGET_LEDGER_NAME, 
+    TARGET_LEDGER_SHORT_NAME,
+    TARGET_LEDGER_CATEGORY_CODE, 
+    RELATIONSHIP_TYPE_CODE,
+    RELATIONSHIP_ENABLED_FLAG,
+    INHERIT_CREATION_USER_FLAG,
+    LAST_UPDATE_DATE, 
+    LAST_UPDATED_BY, 
+    CREATION_DATE, 
+    CREATED_BY, 
+    LAST_UPDATE_LOGIN,
+    GL_JE_CONVERSION_SET_ID, 
+    SL_COA_MAPPING_ID,
+    AUTOMATIC_POST_FLAG, 
+    ALC_DEFAULT_CONV_RATE_TYPE,
+    ALC_NO_RATE_ACTION_CODE,
+    ALC_MAX_DAYS_ROLL_RATE, 
+    ALC_INHERIT_CONVERSION_TYPE,
+    ALC_INIT_CONV_OPTION_CODE,
+    ALC_INIT_PERIOD,
+    ALC_INIT_DATE, 
+    ALC_INITIALIZING_RATE_DATE,
+    ALC_INITIALIZING_RATE_TYPE,
+    ALC_PERIOD_AVERAGE_RATE_TYPE, 
+    ALC_PERIOD_END_RATE_TYPE,
+    APPLICATION_ID, 
+    ORG_ID, 
+    DISABLE_CONVERSION_DATE,
+    STATUS_CODE, 
+    HIST_CONV_STATUS_CODE,
+	KCA_OPERATION,
+	KCA_SEQ_ID,
+	kca_seq_date
+from
+	bec_raw_dl_ext.GL_LEDGER_RELATIONSHIPS 
+	where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= '' 
+	and (RELATIONSHIP_ID,KCA_SEQ_ID) in 
+	(select RELATIONSHIP_ID,max(KCA_SEQ_ID) from bec_raw_dl_ext.GL_LEDGER_RELATIONSHIPS 
+     where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= ''
+     group by RELATIONSHIP_ID)
+     and ( kca_seq_date > (select (executebegints-prune_days) 
+	from bec_etl_ctrl.batch_ods_info where ods_table_name ='gl_ledger_relationships')
+ 
+            )
+	);
+END;
+

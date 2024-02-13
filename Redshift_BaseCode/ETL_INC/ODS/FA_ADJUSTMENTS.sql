@@ -1,0 +1,164 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for ODS.
+# File Version: KPI v1.0
+*/
+begin;
+
+-- Delete Records
+
+delete from bec_ods.fa_adjustments
+where (nvl(TRANSACTION_HEADER_ID,0),nvl(ADJUSTMENT_LINE_ID,0))  in (
+select nvl(stg.TRANSACTION_HEADER_ID,0) as TRANSACTION_HEADER_ID,nvl(stg.ADJUSTMENT_LINE_ID,0) as ADJUSTMENT_LINE_ID from bec_ods.fa_adjustments ods, bec_ods_stg.fa_adjustments stg
+where nvl(ods.TRANSACTION_HEADER_ID,0) = nvl(stg.TRANSACTION_HEADER_ID,0)
+and nvl(ods.ADJUSTMENT_LINE_ID,0) = nvl(stg.ADJUSTMENT_LINE_ID,0)
+and stg.kca_operation IN ('INSERT','UPDATE')
+);
+
+commit;
+
+-- Insert records
+
+insert into	bec_ods.fa_adjustments
+       (TRANSACTION_HEADER_ID,
+		SOURCE_TYPE_CODE,
+		ADJUSTMENT_TYPE,
+		DEBIT_CREDIT_FLAG,
+		CODE_COMBINATION_ID,
+		BOOK_TYPE_CODE,
+		ASSET_ID,
+		ADJUSTMENT_AMOUNT,
+		DISTRIBUTION_ID,
+		LAST_UPDATE_DATE,
+		LAST_UPDATED_BY,
+		LAST_UPDATE_LOGIN,
+		ANNUALIZED_ADJUSTMENT,
+		JE_HEADER_ID,
+		JE_LINE_NUM,
+		PERIOD_COUNTER_ADJUSTED,
+		PERIOD_COUNTER_CREATED,
+		ASSET_INVOICE_ID,
+		GLOBAL_ATTRIBUTE1,
+		GLOBAL_ATTRIBUTE2,
+		GLOBAL_ATTRIBUTE3,
+		GLOBAL_ATTRIBUTE4,
+		GLOBAL_ATTRIBUTE5,
+		GLOBAL_ATTRIBUTE6,
+		GLOBAL_ATTRIBUTE7,
+		GLOBAL_ATTRIBUTE8,
+		GLOBAL_ATTRIBUTE9,
+		GLOBAL_ATTRIBUTE10,
+		GLOBAL_ATTRIBUTE11,
+		GLOBAL_ATTRIBUTE12,
+		GLOBAL_ATTRIBUTE13,
+		GLOBAL_ATTRIBUTE14,
+		GLOBAL_ATTRIBUTE15,
+		GLOBAL_ATTRIBUTE16,
+		GLOBAL_ATTRIBUTE17,
+		GLOBAL_ATTRIBUTE18,
+		GLOBAL_ATTRIBUTE19,
+		GLOBAL_ATTRIBUTE20,
+		GLOBAL_ATTRIBUTE_CATEGORY,
+		DEPRN_OVERRIDE_FLAG,
+		TRACK_MEMBER_FLAG,
+		ADJUSTMENT_LINE_ID,
+		SOURCE_LINE_ID,
+		SOURCE_DEST_CODE,
+		INSERTION_ORDER,
+        KCA_OPERATION,
+        IS_DELETED_FLG,
+		kca_seq_id,
+		kca_seq_date)	
+(
+	select
+		TRANSACTION_HEADER_ID,
+		SOURCE_TYPE_CODE,
+		ADJUSTMENT_TYPE,
+		DEBIT_CREDIT_FLAG,
+		CODE_COMBINATION_ID,
+		BOOK_TYPE_CODE,
+		ASSET_ID,
+		ADJUSTMENT_AMOUNT,
+		DISTRIBUTION_ID,
+		LAST_UPDATE_DATE,
+		LAST_UPDATED_BY,
+		LAST_UPDATE_LOGIN,
+		ANNUALIZED_ADJUSTMENT,
+		JE_HEADER_ID,
+		JE_LINE_NUM,
+		PERIOD_COUNTER_ADJUSTED,
+		PERIOD_COUNTER_CREATED,
+		ASSET_INVOICE_ID,
+		GLOBAL_ATTRIBUTE1,
+		GLOBAL_ATTRIBUTE2,
+		GLOBAL_ATTRIBUTE3,
+		GLOBAL_ATTRIBUTE4,
+		GLOBAL_ATTRIBUTE5,
+		GLOBAL_ATTRIBUTE6,
+		GLOBAL_ATTRIBUTE7,
+		GLOBAL_ATTRIBUTE8,
+		GLOBAL_ATTRIBUTE9,
+		GLOBAL_ATTRIBUTE10,
+		GLOBAL_ATTRIBUTE11,
+		GLOBAL_ATTRIBUTE12,
+		GLOBAL_ATTRIBUTE13,
+		GLOBAL_ATTRIBUTE14,
+		GLOBAL_ATTRIBUTE15,
+		GLOBAL_ATTRIBUTE16,
+		GLOBAL_ATTRIBUTE17,
+		GLOBAL_ATTRIBUTE18,
+		GLOBAL_ATTRIBUTE19,
+		GLOBAL_ATTRIBUTE20,
+		GLOBAL_ATTRIBUTE_CATEGORY,
+		DEPRN_OVERRIDE_FLAG,
+		TRACK_MEMBER_FLAG,
+		ADJUSTMENT_LINE_ID,
+		SOURCE_LINE_ID,
+		SOURCE_DEST_CODE,
+		INSERTION_ORDER,
+        KCA_OPERATION,
+       'N' AS IS_DELETED_FLG,
+	    cast(NULLIF(KCA_SEQ_ID,'') as numeric(36,0)) as KCA_SEQ_ID,
+		kca_seq_date
+	from bec_ods_stg.fa_adjustments
+	where kca_operation IN ('INSERT','UPDATE') 
+	and (nvl(TRANSACTION_HEADER_ID,0),nvl(ADJUSTMENT_LINE_ID,0),kca_seq_id) in 
+	(select nvl(TRANSACTION_HEADER_ID,0) as TRANSACTION_HEADER_ID,nvl(ADJUSTMENT_LINE_ID,0) as ADJUSTMENT_LINE_ID,max(kca_seq_id) from bec_ods_stg.fa_adjustments 
+     where kca_operation IN ('INSERT','UPDATE')
+     group by nvl(TRANSACTION_HEADER_ID,0),nvl(ADJUSTMENT_LINE_ID,0 ))
+);
+
+commit;
+
+-- Soft delete
+update bec_ods.fa_adjustments set IS_DELETED_FLG = 'N';
+commit;
+update bec_ods.fa_adjustments set IS_DELETED_FLG = 'Y'
+where (nvl(TRANSACTION_HEADER_ID,0),nvl(ADJUSTMENT_LINE_ID,0))  in
+(
+select nvl(TRANSACTION_HEADER_ID,0),nvl(ADJUSTMENT_LINE_ID,0) from bec_raw_dl_ext.fa_adjustments
+where (nvl(TRANSACTION_HEADER_ID,0),nvl(ADJUSTMENT_LINE_ID,0),KCA_SEQ_ID)
+in 
+(
+select nvl(TRANSACTION_HEADER_ID,0),nvl(ADJUSTMENT_LINE_ID,0),max(KCA_SEQ_ID) as KCA_SEQ_ID 
+from bec_raw_dl_ext.fa_adjustments
+group by nvl(TRANSACTION_HEADER_ID,0),nvl(ADJUSTMENT_LINE_ID,0)
+) 
+and kca_operation= 'DELETE'
+);
+commit;
+
+end;
+
+update bec_etl_ctrl.batch_ods_info
+set	last_refresh_date = getdate()
+where ods_table_name = 'fa_adjustments';
+
+commit;

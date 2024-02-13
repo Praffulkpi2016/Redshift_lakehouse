@@ -1,0 +1,237 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for ODS.
+# File Version: KPI v1.0
+*/
+begin;
+
+-- Delete Records
+
+delete from bec_ods.WSH_SERIAL_NUMBERS
+where (nvl(DELIVERY_DETAIL_ID,0),nvl(FM_SERIAL_NUMBER, 'NA')) in (
+select nvl(stg.DELIVERY_DETAIL_ID,0) as DELIVERY_DETAIL_ID,
+nvl(stg.FM_SERIAL_NUMBER, 'NA') as FM_SERIAL_NUMBER
+from bec_ods.wsh_serial_numbers ods, bec_ods_stg.wsh_serial_numbers stg
+where nvl(ods.DELIVERY_DETAIL_ID,0) = nvl(stg.DELIVERY_DETAIL_ID,0) 
+and nvl(ods.FM_SERIAL_NUMBER, 'NA') = nvl(stg.FM_SERIAL_NUMBER, 'NA')
+and stg.kca_operation IN ('INSERT','UPDATE')
+);
+
+commit;
+
+-- Insert records
+
+insert into	bec_ods.wsh_serial_numbers
+       (	
+		DELIVERY_DETAIL_ID, 
+		FM_SERIAL_NUMBER, 
+		TO_SERIAL_NUMBER, 
+		QUANTITY, 
+		CREATION_DATE, 
+		CREATED_BY, 
+		LAST_UPDATE_DATE, 
+		LAST_UPDATED_BY, 
+		ATTRIBUTE_CATEGORY, 
+		ATTRIBUTE1, 
+		ATTRIBUTE2, 
+		ATTRIBUTE3, 
+		ATTRIBUTE4, 
+		ATTRIBUTE5, 
+		ATTRIBUTE6, 
+		ATTRIBUTE7, 
+		ATTRIBUTE8, 
+		ATTRIBUTE9, 
+		ATTRIBUTE10, 
+		ATTRIBUTE11, 
+		ATTRIBUTE12, 
+		ATTRIBUTE13, 
+		ATTRIBUTE14, 
+		ATTRIBUTE15, 
+		LAST_UPDATE_LOGIN, 
+		SERIAL_ATTRIBUTE_CATEGORY, 
+		C_ATTRIBUTE1, 
+		C_ATTRIBUTE2, 
+		C_ATTRIBUTE3, 
+		C_ATTRIBUTE4, 
+		C_ATTRIBUTE5, 
+		C_ATTRIBUTE6, 
+		C_ATTRIBUTE7, 
+		C_ATTRIBUTE8, 
+		C_ATTRIBUTE9, 
+		C_ATTRIBUTE10, 
+		C_ATTRIBUTE11, 
+		C_ATTRIBUTE12, 
+		C_ATTRIBUTE13, 
+		C_ATTRIBUTE14, 
+		C_ATTRIBUTE15, 
+		C_ATTRIBUTE16, 
+		C_ATTRIBUTE17, 
+		C_ATTRIBUTE18, 
+		C_ATTRIBUTE19, 
+		C_ATTRIBUTE20, 
+		D_ATTRIBUTE1, 
+		D_ATTRIBUTE2, 
+		D_ATTRIBUTE3, 
+		D_ATTRIBUTE4, 
+		D_ATTRIBUTE5, 
+		D_ATTRIBUTE6, 
+		D_ATTRIBUTE7, 
+		D_ATTRIBUTE8, 
+		D_ATTRIBUTE9, 
+		D_ATTRIBUTE10, 
+		N_ATTRIBUTE1, 
+		N_ATTRIBUTE2, 
+		N_ATTRIBUTE3, 
+		N_ATTRIBUTE4, 
+		N_ATTRIBUTE5, 
+		N_ATTRIBUTE6, 
+		N_ATTRIBUTE7, 
+		N_ATTRIBUTE8, 
+		N_ATTRIBUTE9, 
+		N_ATTRIBUTE10, 
+		TERRITORY_CODE, 
+		TIME_SINCE_NEW, 
+		CYCLES_SINCE_NEW, 
+		TIME_SINCE_OVERHAUL, 
+		CYCLES_SINCE_OVERHAUL, 
+		TIME_SINCE_REPAIR, 
+		CYCLES_SINCE_REPAIR, 
+		TIME_SINCE_VISIT, 
+		CYCLES_SINCE_VISIT, 
+		TIME_SINCE_MARK, 
+		CYCLES_SINCE_MARK, 
+		NUMBER_OF_REPAIRS, 
+		VENDOR_SERIAL_NUMBER, 
+		VENDOR_LOT_NUMBER, 
+        KCA_OPERATION,
+        IS_DELETED_FLG,
+		kca_seq_ID,
+		kca_seq_date)	
+(
+	select
+		DELIVERY_DETAIL_ID, 
+		FM_SERIAL_NUMBER, 
+		TO_SERIAL_NUMBER, 
+		QUANTITY, 
+		CREATION_DATE, 
+		CREATED_BY, 
+		LAST_UPDATE_DATE, 
+		LAST_UPDATED_BY, 
+		ATTRIBUTE_CATEGORY, 
+		ATTRIBUTE1, 
+		ATTRIBUTE2, 
+		ATTRIBUTE3, 
+		ATTRIBUTE4, 
+		ATTRIBUTE5, 
+		ATTRIBUTE6, 
+		ATTRIBUTE7, 
+		ATTRIBUTE8, 
+		ATTRIBUTE9, 
+		ATTRIBUTE10, 
+		ATTRIBUTE11, 
+		ATTRIBUTE12, 
+		ATTRIBUTE13, 
+		ATTRIBUTE14, 
+		ATTRIBUTE15, 
+		LAST_UPDATE_LOGIN, 
+		SERIAL_ATTRIBUTE_CATEGORY, 
+		C_ATTRIBUTE1, 
+		C_ATTRIBUTE2, 
+		C_ATTRIBUTE3, 
+		C_ATTRIBUTE4, 
+		C_ATTRIBUTE5, 
+		C_ATTRIBUTE6, 
+		C_ATTRIBUTE7, 
+		C_ATTRIBUTE8, 
+		C_ATTRIBUTE9, 
+		C_ATTRIBUTE10, 
+		C_ATTRIBUTE11, 
+		C_ATTRIBUTE12, 
+		C_ATTRIBUTE13, 
+		C_ATTRIBUTE14, 
+		C_ATTRIBUTE15, 
+		C_ATTRIBUTE16, 
+		C_ATTRIBUTE17, 
+		C_ATTRIBUTE18, 
+		C_ATTRIBUTE19, 
+		C_ATTRIBUTE20, 
+		D_ATTRIBUTE1, 
+		D_ATTRIBUTE2, 
+		D_ATTRIBUTE3, 
+		D_ATTRIBUTE4, 
+		D_ATTRIBUTE5, 
+		D_ATTRIBUTE6, 
+		D_ATTRIBUTE7, 
+		D_ATTRIBUTE8, 
+		D_ATTRIBUTE9, 
+		D_ATTRIBUTE10, 
+		N_ATTRIBUTE1, 
+		N_ATTRIBUTE2, 
+		N_ATTRIBUTE3, 
+		N_ATTRIBUTE4, 
+		N_ATTRIBUTE5, 
+		N_ATTRIBUTE6, 
+		N_ATTRIBUTE7, 
+		N_ATTRIBUTE8, 
+		N_ATTRIBUTE9, 
+		N_ATTRIBUTE10, 
+		TERRITORY_CODE, 
+		TIME_SINCE_NEW, 
+		CYCLES_SINCE_NEW, 
+		TIME_SINCE_OVERHAUL, 
+		CYCLES_SINCE_OVERHAUL, 
+		TIME_SINCE_REPAIR, 
+		CYCLES_SINCE_REPAIR, 
+		TIME_SINCE_VISIT, 
+		CYCLES_SINCE_VISIT, 
+		TIME_SINCE_MARK, 
+		CYCLES_SINCE_MARK, 
+		NUMBER_OF_REPAIRS, 
+		VENDOR_SERIAL_NUMBER, 
+		VENDOR_LOT_NUMBER, 
+        KCA_OPERATION,
+       'N' AS IS_DELETED_FLG,
+	    cast(NULLIF(KCA_SEQ_ID,'') as numeric(36,0)) as KCA_SEQ_ID,
+		kca_seq_date
+	from bec_ods_stg.wsh_serial_numbers
+	where kca_operation IN ('INSERT','UPDATE') 
+	and (nvl(DELIVERY_DETAIL_ID,0),nvl(FM_SERIAL_NUMBER, 'NA'),kca_seq_ID) in 
+	(select nvl(DELIVERY_DETAIL_ID,0) as DELIVERY_DETAIL_ID,nvl(FM_SERIAL_NUMBER, 'NA') as FM_SERIAL_NUMBER,max(kca_seq_ID) as kca_seq_ID from bec_ods_stg.wsh_serial_numbers 
+     where kca_operation IN ('INSERT','UPDATE')
+     group by nvl(DELIVERY_DETAIL_ID,0),nvl(FM_SERIAL_NUMBER, 'NA'))
+);
+
+commit;
+
+-- Soft delete
+update bec_ods.wsh_serial_numbers set IS_DELETED_FLG = 'N';
+commit;
+update bec_ods.wsh_serial_numbers set IS_DELETED_FLG = 'Y'
+where (DELIVERY_DETAIL_ID,FM_SERIAL_NUMBER)  in
+(
+select DELIVERY_DETAIL_ID,FM_SERIAL_NUMBER from bec_raw_dl_ext.wsh_serial_numbers
+where (DELIVERY_DETAIL_ID,FM_SERIAL_NUMBER,KCA_SEQ_ID)
+in 
+(
+select DELIVERY_DETAIL_ID,FM_SERIAL_NUMBER,max(KCA_SEQ_ID) as KCA_SEQ_ID 
+from bec_raw_dl_ext.wsh_serial_numbers
+group by DELIVERY_DETAIL_ID,FM_SERIAL_NUMBER
+) 
+and kca_operation= 'DELETE'
+);
+commit;
+
+end;
+
+update bec_etl_ctrl.batch_ods_info
+set	last_refresh_date = getdate()
+where ods_table_name = 'wsh_serial_numbers';
+
+commit;

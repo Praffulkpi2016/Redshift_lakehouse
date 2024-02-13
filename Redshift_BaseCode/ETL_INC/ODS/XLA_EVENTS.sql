@@ -1,0 +1,140 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for ODS.
+# File Version: KPI v1.0
+*/
+begin;
+
+-- Delete Records
+
+delete from bec_ods.XLA_EVENTS
+where (EVENT_ID, APPLICATION_ID) in (
+select stg.EVENT_ID,stg.APPLICATION_ID from bec_ods.XLA_EVENTS ods,  bec_ods_stg.XLA_EVENTS stg
+where ods.EVENT_ID = stg.EVENT_ID AND ods.APPLICATION_ID = stg.APPLICATION_ID
+and stg.kca_operation IN ('INSERT','UPDATE')
+);
+
+commit;
+
+-- Insert records
+
+INSERT INTO bec_ods.XLA_EVENTS
+(
+EVENT_ID
+,APPLICATION_ID
+,EVENT_TYPE_CODE
+,EVENT_DATE
+,ENTITY_ID
+,EVENT_STATUS_CODE
+,PROCESS_STATUS_CODE
+,REFERENCE_NUM_1
+,REFERENCE_NUM_2
+,REFERENCE_NUM_3
+,REFERENCE_NUM_4
+,REFERENCE_CHAR_1
+,REFERENCE_CHAR_2
+,REFERENCE_CHAR_3
+,REFERENCE_CHAR_4
+,REFERENCE_DATE_1
+,REFERENCE_DATE_2
+,REFERENCE_DATE_3
+,REFERENCE_DATE_4
+,EVENT_NUMBER
+,ON_HOLD_FLAG
+,CREATION_DATE
+,CREATED_BY
+,LAST_UPDATE_DATE
+,LAST_UPDATED_BY
+,LAST_UPDATE_LOGIN
+,PROGRAM_UPDATE_DATE
+,PROGRAM_APPLICATION_ID
+,PROGRAM_ID
+,REQUEST_ID
+,UPG_BATCH_ID
+,UPG_SOURCE_APPLICATION_ID
+,UPG_VALID_FLAG
+,TRANSACTION_DATE
+,BUDGETARY_CONTROL_FLAG
+,MERGE_EVENT_SET_ID
+,KCA_OPERATION
+,IS_DELETED_FLG
+,KCA_SEQ_ID
+,kca_seq_date
+)
+(SELECT
+EVENT_ID
+,APPLICATION_ID
+,EVENT_TYPE_CODE
+,EVENT_DATE
+,ENTITY_ID
+,EVENT_STATUS_CODE
+,PROCESS_STATUS_CODE
+,REFERENCE_NUM_1
+,REFERENCE_NUM_2
+,REFERENCE_NUM_3
+,REFERENCE_NUM_4
+,REFERENCE_CHAR_1
+,REFERENCE_CHAR_2
+,REFERENCE_CHAR_3
+,REFERENCE_CHAR_4
+,REFERENCE_DATE_1
+,REFERENCE_DATE_2
+,REFERENCE_DATE_3
+,REFERENCE_DATE_4
+,EVENT_NUMBER
+,ON_HOLD_FLAG
+,CREATION_DATE
+,CREATED_BY
+,LAST_UPDATE_DATE
+,LAST_UPDATED_BY
+,LAST_UPDATE_LOGIN
+,PROGRAM_UPDATE_DATE
+,PROGRAM_APPLICATION_ID
+,PROGRAM_ID
+,REQUEST_ID
+,UPG_BATCH_ID
+,UPG_SOURCE_APPLICATION_ID
+,UPG_VALID_FLAG
+,TRANSACTION_DATE
+,BUDGETARY_CONTROL_FLAG
+,MERGE_EVENT_SET_ID
+,KCA_OPERATION
+       ,'N' AS IS_DELETED_FLG,
+	    cast(NULLIF(KCA_SEQ_ID,'') as numeric(36,0)) as KCA_SEQ_ID,
+		KCA_SEQ_DATE
+	from bec_ods_stg.XLA_EVENTS
+	where kca_operation in ('INSERT','UPDATE') 
+	and (EVENT_ID, APPLICATION_ID,kca_seq_id) in 
+	(select EVENT_ID, APPLICATION_ID,max(kca_seq_id) from bec_ods_stg.XLA_EVENTS 
+     where kca_operation in ('INSERT','UPDATE')
+     group by EVENT_ID, APPLICATION_ID)
+);
+
+commit;
+
+
+
+-- Soft delete
+
+update bec_ods.XLA_EVENTS set IS_DELETED_FLG = 'Y'
+where (EVENT_ID, APPLICATION_ID) in (
+select ext.EVENT_ID, ext.APPLICATION_ID from bec_ods.XLA_EVENTS ods, bec_raw_dl_ext.XLA_EVENTS ext
+where ods.EVENT_ID = ext.EVENT_ID and ods.APPLICATION_ID = ext.APPLICATION_ID 
+and ext.kca_operation = 'DELETE');
+
+commit;
+
+end;
+
+update bec_etl_ctrl.batch_ods_info
+set	last_refresh_date = getdate(),load_type = 'I'
+where ods_table_name = 'xla_events';
+
+commit;

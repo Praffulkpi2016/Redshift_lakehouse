@@ -1,0 +1,152 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for stage.
+# File Version: KPI v1.0
+*/
+begin;
+
+truncate
+	table bec_ods_stg.CS_TRANSACTION_TYPES_B;
+
+COMMIT;
+
+insert
+	into
+	bec_ods_stg.CS_TRANSACTION_TYPES_B
+(	
+	TRANSACTION_TYPE_ID, 
+	LAST_UPDATE_DATE, 
+	LAST_UPDATED_BY, 
+	CREATION_DATE, 
+	CREATED_BY, 
+	LAST_UPDATE_LOGIN, 
+	SEEDED_FLAG, 
+	REVISION_FLAG, 
+	END_DATE_ACTIVE, 
+	START_DATE_ACTIVE, 
+	INSTALLED_CP_STATUS_ID, 
+	INSTALLED_STATUS_CODE, 
+	INSTALLED_CP_RETURN_REQUIRED, 
+	BILLING_FLAG, 
+	NEW_CP_STATUS_ID, 
+	NEW_CP_STATUS_CODE, 
+	TRANSFER_SERVICE, 
+	NEW_CP_RETURN_REQUIRED, 
+	ATTRIBUTE1, 
+	ATTRIBUTE2, 
+	ATTRIBUTE3, 
+	ATTRIBUTE4, 
+	ATTRIBUTE5, 
+	ATTRIBUTE6, 
+	ATTRIBUTE7, 
+	ATTRIBUTE8, 
+	ATTRIBUTE9, 
+	ATTRIBUTE10, 
+	ATTRIBUTE11, 
+	ATTRIBUTE12, 
+	ATTRIBUTE13, 
+	ATTRIBUTE14, 
+	ATTRIBUTE15, 
+	CONTEXT, 
+	NO_CHARGE_FLAG, 
+	MOVE_COUNTERS_FLAG, 
+	OBJECT_VERSION_NUMBER, 
+	DEPOT_REPAIR_FLAG, 
+	SECURITY_GROUP_ID, 
+	LINE_ORDER_CATEGORY_CODE, 
+	INTERFACE_TO_OE_FLAG, 
+	CREATE_COST_FLAG, 
+	CREATE_CHARGE_FLAG, 
+	TRAVEL_FLAG, 
+	CALCULATE_PRICE_FLAG, 
+	ZD_EDITION_NAME, 
+	ZD_SYNC, 
+	UPDATE_TASK_ACTUALS_FLAG, 
+	KCA_OPERATION,
+	kca_seq_id,
+	kca_seq_date
+)
+(
+	select
+		TRANSACTION_TYPE_ID, 
+		LAST_UPDATE_DATE, 
+		LAST_UPDATED_BY, 
+		CREATION_DATE, 
+		CREATED_BY, 
+		LAST_UPDATE_LOGIN, 
+		SEEDED_FLAG, 
+		REVISION_FLAG, 
+		END_DATE_ACTIVE, 
+		START_DATE_ACTIVE, 
+		INSTALLED_CP_STATUS_ID, 
+		INSTALLED_STATUS_CODE, 
+		INSTALLED_CP_RETURN_REQUIRED, 
+		BILLING_FLAG, 
+		NEW_CP_STATUS_ID, 
+		NEW_CP_STATUS_CODE, 
+		TRANSFER_SERVICE, 
+		NEW_CP_RETURN_REQUIRED, 
+		ATTRIBUTE1, 
+		ATTRIBUTE2, 
+		ATTRIBUTE3, 
+		ATTRIBUTE4, 
+		ATTRIBUTE5, 
+		ATTRIBUTE6, 
+		ATTRIBUTE7, 
+		ATTRIBUTE8, 
+		ATTRIBUTE9, 
+		ATTRIBUTE10, 
+		ATTRIBUTE11, 
+		ATTRIBUTE12, 
+		ATTRIBUTE13, 
+		ATTRIBUTE14, 
+		ATTRIBUTE15, 
+		CONTEXT, 
+		NO_CHARGE_FLAG, 
+		MOVE_COUNTERS_FLAG, 
+		OBJECT_VERSION_NUMBER, 
+		DEPOT_REPAIR_FLAG, 
+		SECURITY_GROUP_ID, 
+		LINE_ORDER_CATEGORY_CODE, 
+		INTERFACE_TO_OE_FLAG, 
+		CREATE_COST_FLAG, 
+		CREATE_CHARGE_FLAG, 
+		TRAVEL_FLAG, 
+		CALCULATE_PRICE_FLAG, 
+		ZD_EDITION_NAME, 
+		ZD_SYNC, 
+		UPDATE_TASK_ACTUALS_FLAG, 
+		KCA_OPERATION,
+		kca_seq_id,
+		kca_seq_date
+	from
+		bec_raw_dl_ext.CS_TRANSACTION_TYPES_B
+	where kca_operation != 'DELETE' and nvl(kca_seq_id,'')!= ''
+		and (nvl(TRANSACTION_TYPE_ID, 0),
+		kca_seq_id) in 
+(
+		select
+			nvl(TRANSACTION_TYPE_ID,0) as TRANSACTION_TYPE_ID,
+			max(kca_seq_id) as kca_seq_id
+		from
+			bec_raw_dl_ext.CS_TRANSACTION_TYPES_B
+		where kca_operation != 'DELETE' and nvl(kca_seq_id,'')!= ''
+		group by
+			nvl(TRANSACTION_TYPE_ID, 0))
+		and 
+		kca_seq_date > (
+		select
+			(executebegints-prune_days)
+		from
+			bec_etl_ctrl.batch_ods_info
+		where
+			ods_table_name = 'cs_transaction_types_b')
+);
+end;

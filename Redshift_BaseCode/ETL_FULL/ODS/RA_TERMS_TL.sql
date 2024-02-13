@@ -1,0 +1,89 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents full load approach for ODS.
+# File Version: KPI v1.0
+*/
+
+begin;
+
+DROP TABLE if exists bec_ods.RA_TERMS_TL;
+
+CREATE TABLE IF NOT EXISTS bec_ods.RA_TERMS_TL
+(
+TERM_ID	NUMERIC(15,0)   ENCODE az64
+,DESCRIPTION	VARCHAR(240) ENCODE lzo
+,NAME	VARCHAR(15) ENCODE lzo
+,"LANGUAGE"	VARCHAR(4) ENCODE lzo
+,SOURCE_LANG	VARCHAR(4) ENCODE lzo
+,LAST_UPDATE_DATE	TIMESTAMP WITHOUT TIME ZONE   ENCODE az64
+,CREATION_DATE	TIMESTAMP WITHOUT TIME ZONE   ENCODE az64
+,CREATED_BY	NUMERIC(15,0)   ENCODE az64
+,LAST_UPDATED_BY	NUMERIC(15,0)   ENCODE az64
+,LAST_UPDATE_LOGIN	NUMERIC(15,0)   ENCODE az64
+,ZD_EDITION_NAME VARCHAR(30)  ENCODE lzo
+,ZD_SYNC VARCHAR(30)  ENCODE lzo
+,KCA_OPERATION VARCHAR(10)   ENCODE lzo
+,IS_DELETED_FLG VARCHAR(2) ENCODE lzo
+,KCA_SEQ_ID NUMERIC(36,0)   ENCODE az64
+	,kca_seq_date TIMESTAMP WITHOUT TIME ZONE   ENCODE az64
+)
+DISTSTYLE
+auto;
+
+INSERT INTO bec_ods.RA_TERMS_TL
+(
+TERM_ID
+,DESCRIPTION
+,NAME
+,LANGUAGE
+,SOURCE_LANG
+,LAST_UPDATE_DATE
+,CREATION_DATE
+,CREATED_BY
+,LAST_UPDATED_BY
+,LAST_UPDATE_LOGIN
+,ZD_EDITION_NAME
+,ZD_SYNC
+,KCA_OPERATION
+,IS_DELETED_FLG
+,KCA_SEQ_ID
+,kca_seq_date
+)
+SELECT
+TERM_ID
+,DESCRIPTION
+,NAME
+,LANGUAGE
+,SOURCE_LANG
+,LAST_UPDATE_DATE
+,CREATION_DATE
+,CREATED_BY
+,LAST_UPDATED_BY
+,LAST_UPDATE_LOGIN
+,ZD_EDITION_NAME
+,ZD_SYNC
+,KCA_OPERATION
+,'N' as IS_DELETED_FLG
+,cast(NULLIF(KCA_SEQ_ID,'') as numeric(36,0)) as KCA_SEQ_ID
+,kca_seq_date
+
+    FROM
+        bec_ods_stg.RA_TERMS_TL;
+
+end;		
+
+UPDATE bec_etl_ctrl.batch_ods_info
+SET
+    load_type = 'I',
+    last_refresh_date = getdate()
+WHERE
+    ods_table_name = 'ra_terms_tl';
+	
+COMMIT;

@@ -1,0 +1,107 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for stage.
+# File Version: KPI v1.0
+*/
+BEGIN;
+TRUNCATE TABLE bec_ods_stg.IBY_PMT_INSTR_USES_ALL;
+
+
+insert into bec_ods_stg.IBY_PMT_INSTR_USES_ALL
+(
+	INSTRUMENT_PAYMENT_USE_ID,
+	PAYMENT_FLOW,
+	EXT_PMT_PARTY_ID,
+	INSTRUMENT_TYPE,
+	INSTRUMENT_ID,
+	PAYMENT_FUNCTION,
+	ORDER_OF_PREFERENCE,
+	CREATED_BY,
+	CREATION_DATE,
+	LAST_UPDATED_BY,
+	LAST_UPDATE_DATE,
+	LAST_UPDATE_LOGIN,
+	OBJECT_VERSION_NUMBER,
+	START_DATE,
+	END_DATE,
+	DEBIT_AUTH_FLAG,
+	DEBIT_AUTH_METHOD,
+	DEBIT_AUTH_REFERENCE,
+	DEBIT_AUTH_BEGIN,
+	DEBIT_AUTH_END,
+	ATTRIBUTE_CATEGORY,
+	ATTRIBUTE1,
+	ATTRIBUTE2,
+	ATTRIBUTE3,
+	ATTRIBUTE4,
+	ATTRIBUTE5,
+	ATTRIBUTE6,
+	ATTRIBUTE7,
+	ATTRIBUTE8,
+	ATTRIBUTE9,
+	ATTRIBUTE10,
+	ATTRIBUTE11,
+	ATTRIBUTE12,
+	ATTRIBUTE13,
+	ATTRIBUTE14,
+	ATTRIBUTE15
+,KCA_OPERATION
+,KCA_SEQ_ID,
+	kca_seq_date
+) (SELECT 
+	INSTRUMENT_PAYMENT_USE_ID,
+	PAYMENT_FLOW,
+	EXT_PMT_PARTY_ID,
+	INSTRUMENT_TYPE,
+	INSTRUMENT_ID,
+	PAYMENT_FUNCTION,
+	ORDER_OF_PREFERENCE,
+	CREATED_BY,
+	CREATION_DATE,
+	LAST_UPDATED_BY,
+	LAST_UPDATE_DATE,
+	LAST_UPDATE_LOGIN,
+	OBJECT_VERSION_NUMBER,
+	START_DATE,
+	END_DATE,
+	DEBIT_AUTH_FLAG,
+	DEBIT_AUTH_METHOD,
+	DEBIT_AUTH_REFERENCE,
+	DEBIT_AUTH_BEGIN,
+	DEBIT_AUTH_END,
+	ATTRIBUTE_CATEGORY,
+	ATTRIBUTE1,
+	ATTRIBUTE2,
+	ATTRIBUTE3,
+	ATTRIBUTE4,
+	ATTRIBUTE5,
+	ATTRIBUTE6,
+	ATTRIBUTE7,
+	ATTRIBUTE8,
+	ATTRIBUTE9,
+	ATTRIBUTE10,
+	ATTRIBUTE11,
+	ATTRIBUTE12,
+	ATTRIBUTE13,
+	ATTRIBUTE14,
+	ATTRIBUTE15
+,KCA_OPERATION
+,KCA_SEQ_ID,
+	kca_seq_date
+ from bec_raw_dl_ext.IBY_PMT_INSTR_USES_ALL 
+ where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= '' 
+	and (INSTRUMENT_PAYMENT_USE_ID,KCA_SEQ_ID) in 
+	(select INSTRUMENT_PAYMENT_USE_ID,max(KCA_SEQ_ID) from bec_raw_dl_ext.IBY_PMT_INSTR_USES_ALL 
+     where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= ''
+     group by INSTRUMENT_PAYMENT_USE_ID)
+     and  kca_seq_date > (select (executebegints-prune_days) from bec_etl_ctrl.batch_ods_info where ods_table_name ='iby_pmt_instr_uses_all')
+	 		 
+			);
+END;

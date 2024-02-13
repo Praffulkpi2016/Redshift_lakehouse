@@ -1,0 +1,140 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for stage.
+# File Version: KPI v1.0
+*/
+begin;
+
+truncate table bec_ods_stg.mtl_supply;
+
+insert into	bec_ods_stg.mtl_supply
+   (SUPPLY_TYPE_CODE,
+	SUPPLY_SOURCE_ID,
+	LAST_UPDATED_BY,
+	LAST_UPDATE_DATE,
+	LAST_UPDATE_LOGIN,
+	CREATED_BY,
+	CREATION_DATE,
+	REQUEST_ID,
+	PROGRAM_APPLICATION_ID,
+	PROGRAM_ID,
+	PROGRAM_UPDATE_DATE,
+	REQ_HEADER_ID,
+	REQ_LINE_ID,
+	PO_HEADER_ID,
+	PO_RELEASE_ID,
+	PO_LINE_ID,
+	PO_LINE_LOCATION_ID,
+	PO_DISTRIBUTION_ID,
+	SHIPMENT_HEADER_ID,
+	SHIPMENT_LINE_ID,
+	RCV_TRANSACTION_ID,
+	ITEM_ID,
+	ITEM_REVISION,
+	CATEGORY_ID,
+	QUANTITY,
+	UNIT_OF_MEASURE,
+	TO_ORG_PRIMARY_QUANTITY,
+	TO_ORG_PRIMARY_UOM,
+	RECEIPT_DATE,
+	NEED_BY_DATE,
+	EXPECTED_DELIVERY_DATE,
+	DESTINATION_TYPE_CODE,
+	LOCATION_ID,
+	FROM_ORGANIZATION_ID,
+	FROM_SUBINVENTORY,
+	TO_ORGANIZATION_ID,
+	TO_SUBINVENTORY,
+	INTRANSIT_OWNING_ORG_ID,
+	MRP_PRIMARY_QUANTITY,
+	MRP_PRIMARY_UOM,
+	MRP_EXPECTED_DELIVERY_DATE,
+	MRP_DESTINATION_TYPE_CODE,
+	MRP_TO_ORGANIZATION_ID,
+	MRP_TO_SUBINVENTORY,
+	CHANGE_FLAG,
+	CHANGE_TYPE,
+	COST_GROUP_ID,
+	EXCLUDE_FROM_PLANNING,
+    KCA_OPERATION,
+	kca_seq_id,
+	kca_seq_date)
+(
+	select
+		SUPPLY_TYPE_CODE,
+		SUPPLY_SOURCE_ID,
+		LAST_UPDATED_BY,
+		LAST_UPDATE_DATE,
+		LAST_UPDATE_LOGIN,
+		CREATED_BY,
+		CREATION_DATE,
+		REQUEST_ID,
+		PROGRAM_APPLICATION_ID,
+		PROGRAM_ID,
+		PROGRAM_UPDATE_DATE,
+		REQ_HEADER_ID,
+		REQ_LINE_ID,
+		PO_HEADER_ID,
+		PO_RELEASE_ID,
+		PO_LINE_ID,
+		PO_LINE_LOCATION_ID,
+		PO_DISTRIBUTION_ID,
+		SHIPMENT_HEADER_ID,
+		SHIPMENT_LINE_ID,
+		RCV_TRANSACTION_ID,
+		ITEM_ID,
+		ITEM_REVISION,
+		CATEGORY_ID,
+		QUANTITY,
+		UNIT_OF_MEASURE,
+		TO_ORG_PRIMARY_QUANTITY,
+		TO_ORG_PRIMARY_UOM,
+		RECEIPT_DATE,
+		NEED_BY_DATE,
+		EXPECTED_DELIVERY_DATE,
+		DESTINATION_TYPE_CODE,
+		LOCATION_ID,
+		FROM_ORGANIZATION_ID,
+		FROM_SUBINVENTORY,
+		TO_ORGANIZATION_ID,
+		TO_SUBINVENTORY,
+		INTRANSIT_OWNING_ORG_ID,
+		MRP_PRIMARY_QUANTITY,
+		MRP_PRIMARY_UOM,
+		MRP_EXPECTED_DELIVERY_DATE,
+		MRP_DESTINATION_TYPE_CODE,
+		MRP_TO_ORGANIZATION_ID,
+		MRP_TO_SUBINVENTORY,
+		CHANGE_FLAG,
+		CHANGE_TYPE,
+		COST_GROUP_ID,
+		EXCLUDE_FROM_PLANNING,
+        KCA_OPERATION,
+		kca_seq_id,
+	kca_seq_date
+	from bec_raw_dl_ext.mtl_supply
+	where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= '' 
+	and (SUPPLY_TYPE_CODE,SUPPLY_SOURCE_ID,nvl(PO_DISTRIBUTION_ID,0),kca_seq_id) in 
+	(select SUPPLY_TYPE_CODE,SUPPLY_SOURCE_ID,nvl(PO_DISTRIBUTION_ID,0),max(kca_seq_id) from bec_raw_dl_ext.mtl_supply 
+     where kca_operation != 'DELETE'  and nvl(kca_seq_id,'')!= ''
+     group by SUPPLY_TYPE_CODE,SUPPLY_SOURCE_ID,nvl(PO_DISTRIBUTION_ID,0))
+        and	( kca_seq_date > (
+		select
+			(executebegints-prune_days)
+		from
+			bec_etl_ctrl.batch_ods_info
+		where
+			ods_table_name = 'mtl_supply')
+		 
+            )	
+);
+end;
+
+ 

@@ -1,0 +1,101 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for stage.
+# File Version: KPI v1.0
+*/
+begin;
+
+truncate
+	table bec_ods_stg.fnd_id_flex_segments;
+
+insert into bec_ods_stg.FND_ID_FLEX_SEGMENTS
+(
+APPLICATION_ID
+,ID_FLEX_CODE
+,ID_FLEX_NUM
+,APPLICATION_COLUMN_NAME
+,SEGMENT_NAME
+,LAST_UPDATE_DATE
+,LAST_UPDATED_BY
+,CREATION_DATE
+,CREATED_BY
+,LAST_UPDATE_LOGIN
+,SEGMENT_NUM
+,APPLICATION_COLUMN_INDEX_FLAG
+,ENABLED_FLAG
+,REQUIRED_FLAG
+,DISPLAY_FLAG
+,DISPLAY_SIZE
+,SECURITY_ENABLED_FLAG
+,MAXIMUM_DESCRIPTION_LEN
+,CONCATENATION_DESCRIPTION_LEN
+,FLEX_VALUE_SET_ID
+,RANGE_CODE
+,DEFAULT_TYPE
+,DEFAULT_VALUE
+,RUNTIME_PROPERTY_FUNCTION 
+,ADDITIONAL_WHERE_CLAUSE
+,SEGMENT_INSERT_FLAG
+,SEGMENT_UPDATE_FLAG
+,ZD_EDITION_NAME
+,ZD_SYNC
+,KCA_OPERATION 
+--,IS_DELETED_FLG
+,kca_seq_id
+,kca_seq_date
+)
+(
+select
+APPLICATION_ID
+,ID_FLEX_CODE
+,ID_FLEX_NUM
+,APPLICATION_COLUMN_NAME
+,SEGMENT_NAME
+,LAST_UPDATE_DATE
+,LAST_UPDATED_BY
+,CREATION_DATE
+,CREATED_BY
+,LAST_UPDATE_LOGIN
+,SEGMENT_NUM
+,APPLICATION_COLUMN_INDEX_FLAG
+,ENABLED_FLAG
+,REQUIRED_FLAG
+,DISPLAY_FLAG
+,DISPLAY_SIZE
+,SECURITY_ENABLED_FLAG
+,MAXIMUM_DESCRIPTION_LEN
+,CONCATENATION_DESCRIPTION_LEN
+,FLEX_VALUE_SET_ID
+,RANGE_CODE
+,DEFAULT_TYPE
+,DEFAULT_VALUE
+,RUNTIME_PROPERTY_FUNCTION 
+,ADDITIONAL_WHERE_CLAUSE
+,SEGMENT_INSERT_FLAG
+,SEGMENT_UPDATE_FLAG
+,ZD_EDITION_NAME
+,ZD_SYNC
+,KCA_OPERATION 
+--,'N' as IS_DELETED_FLG
+,kca_seq_id
+,kca_seq_date
+from bec_raw_dl_ext.FND_ID_FLEX_SEGMENTS
+where kca_operation != 'DELETE' and nvl(kca_seq_id,'')!= '' and (APPLICATION_ID,ID_FLEX_CODE,ID_FLEX_NUM,APPLICATION_COLUMN_NAME,kca_seq_id) in (select APPLICATION_ID,ID_FLEX_CODE,ID_FLEX_NUM,APPLICATION_COLUMN_NAME,max(kca_seq_id) from bec_raw_dl_ext.FND_ID_FLEX_SEGMENTS 
+where kca_operation != 'DELETE' and nvl(kca_seq_id,'')!= ''
+group by APPLICATION_ID,ID_FLEX_CODE,ID_FLEX_NUM,APPLICATION_COLUMN_NAME) and
+		kca_seq_date > (
+		select
+			(executebegints-prune_days)
+		from
+			bec_etl_ctrl.batch_ods_info
+		where
+			ods_table_name = 'fnd_id_flex_segments')
+);
+end;

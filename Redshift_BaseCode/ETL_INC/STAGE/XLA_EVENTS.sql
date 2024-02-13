@@ -1,0 +1,115 @@
+/*
+# Copyright(c) 2022 KPI Partners, Inc. All Rights Reserved.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+# author: KPI Partners, Inc.
+# version: 2022.06
+# description: This script represents Incremental load approach for stage.
+# File Version: KPI v1.0
+*/
+begin;
+
+truncate table bec_ods_stg.XLA_EVENTS;
+
+insert into	bec_ods_stg.XLA_EVENTS
+   (
+EVENT_ID
+,APPLICATION_ID
+,EVENT_TYPE_CODE
+,EVENT_DATE
+,ENTITY_ID
+,EVENT_STATUS_CODE
+,PROCESS_STATUS_CODE
+,REFERENCE_NUM_1
+,REFERENCE_NUM_2
+,REFERENCE_NUM_3
+,REFERENCE_NUM_4
+,REFERENCE_CHAR_1
+,REFERENCE_CHAR_2
+,REFERENCE_CHAR_3
+,REFERENCE_CHAR_4
+,REFERENCE_DATE_1
+,REFERENCE_DATE_2
+,REFERENCE_DATE_3
+,REFERENCE_DATE_4
+,EVENT_NUMBER
+,ON_HOLD_FLAG
+,CREATION_DATE
+,CREATED_BY
+,LAST_UPDATE_DATE
+,LAST_UPDATED_BY
+,LAST_UPDATE_LOGIN
+,PROGRAM_UPDATE_DATE
+,PROGRAM_APPLICATION_ID
+,PROGRAM_ID
+,REQUEST_ID
+,UPG_BATCH_ID
+,UPG_SOURCE_APPLICATION_ID
+,UPG_VALID_FLAG
+,TRANSACTION_DATE
+,BUDGETARY_CONTROL_FLAG
+,MERGE_EVENT_SET_ID
+,KCA_OPERATION
+,KCA_SEQ_ID
+,KCA_SEQ_DATE
+)
+(
+select
+EVENT_ID
+,APPLICATION_ID
+,EVENT_TYPE_CODE
+,EVENT_DATE
+,ENTITY_ID
+,EVENT_STATUS_CODE
+,PROCESS_STATUS_CODE
+,REFERENCE_NUM_1
+,REFERENCE_NUM_2
+,REFERENCE_NUM_3
+,REFERENCE_NUM_4
+,REFERENCE_CHAR_1
+,REFERENCE_CHAR_2
+,REFERENCE_CHAR_3
+,REFERENCE_CHAR_4
+,REFERENCE_DATE_1
+,REFERENCE_DATE_2
+,REFERENCE_DATE_3
+,REFERENCE_DATE_4
+,EVENT_NUMBER
+,ON_HOLD_FLAG
+,CREATION_DATE
+,CREATED_BY
+,LAST_UPDATE_DATE
+,LAST_UPDATED_BY
+,LAST_UPDATE_LOGIN
+,PROGRAM_UPDATE_DATE
+,PROGRAM_APPLICATION_ID
+,PROGRAM_ID
+,REQUEST_ID
+,UPG_BATCH_ID
+,UPG_SOURCE_APPLICATION_ID
+,UPG_VALID_FLAG
+,TRANSACTION_DATE
+,BUDGETARY_CONTROL_FLAG
+,MERGE_EVENT_SET_ID
+,KCA_OPERATION
+,KCA_SEQ_ID
+,KCA_SEQ_DATE
+	from bec_raw_dl_ext.XLA_EVENTS
+	where kca_operation != 'DELETE'  and nvl(kca_seq_id,'') != ''
+	and (EVENT_ID,kca_seq_id) in 
+	(select EVENT_ID,max(kca_seq_id) from bec_raw_dl_ext.XLA_EVENTS 
+     where kca_operation != 'DELETE'  and nvl(kca_seq_id,'') != ''
+     group by EVENT_ID)
+        and	(KCA_SEQ_DATE > (
+		select
+			(executebegints-prune_days)
+		from
+			bec_etl_ctrl.batch_ods_info
+		where
+			ods_table_name = 'xla_events')
+            )
+);
+end;
