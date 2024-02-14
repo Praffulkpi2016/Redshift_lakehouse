@@ -1,0 +1,98 @@
+TRUNCATE table
+	table bronze_bec_ods_stg.JTF_RS_GROUPS_B;
+INSERT INTO bronze_bec_ods_stg.JTF_RS_GROUPS_B (
+  GROUP_ID,
+  GROUP_NUMBER,
+  CREATED_BY,
+  CREATION_DATE,
+  LAST_UPDATED_BY,
+  LAST_UPDATE_DATE,
+  LAST_UPDATE_LOGIN,
+  EXCLUSIVE_FLAG,
+  START_DATE_ACTIVE,
+  END_DATE_ACTIVE,
+  ACCOUNTING_CODE,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  ATTRIBUTE_CATEGORY,
+  EMAIL_ADDRESS,
+  OBJECT_VERSION_NUMBER,
+  SECURITY_GROUP_ID,
+  TIME_ZONE,
+  KCA_OPERATION,
+  kca_seq_id,
+  kca_seq_date
+)
+(
+  SELECT
+    GROUP_ID,
+    GROUP_NUMBER,
+    CREATED_BY,
+    CREATION_DATE,
+    LAST_UPDATED_BY,
+    LAST_UPDATE_DATE,
+    LAST_UPDATE_LOGIN,
+    EXCLUSIVE_FLAG,
+    START_DATE_ACTIVE,
+    END_DATE_ACTIVE,
+    ACCOUNTING_CODE,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    ATTRIBUTE_CATEGORY,
+    EMAIL_ADDRESS,
+    OBJECT_VERSION_NUMBER,
+    SECURITY_GROUP_ID,
+    TIME_ZONE,
+    KCA_OPERATION,
+    kca_seq_id,
+    kca_seq_date
+  FROM bec_raw_dl_ext.JTF_RS_GROUPS_B
+  WHERE
+    kca_operation <> 'DELETE'
+    AND COALESCE(kca_seq_id, '') <> ''
+    AND (COALESCE(GROUP_ID, 0), kca_seq_id) IN (
+      SELECT
+        COALESCE(GROUP_ID, 0) AS GROUP_ID,
+        MAX(kca_seq_id) AS kca_seq_id
+      FROM bec_raw_dl_ext.JTF_RS_GROUPS_B
+      WHERE
+        kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') <> ''
+      GROUP BY
+        COALESCE(GROUP_ID, 0)
+    )
+    AND kca_seq_date > (
+      SELECT
+        (
+          executebegints - prune_days
+        )
+      FROM bec_etl_ctrl.batch_ods_info
+      WHERE
+        ods_table_name = 'jtf_rs_groups_b'
+    )
+);

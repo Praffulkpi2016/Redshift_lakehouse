@@ -1,0 +1,74 @@
+TRUNCATE table
+	table bronze_bec_ods_stg.PA_PROJECT_ACCUM_HEADERS;
+INSERT INTO bronze_bec_ods_stg.PA_PROJECT_ACCUM_HEADERS (
+  PROJECT_ACCUM_ID,
+  PROJECT_ID,
+  TASK_ID,
+  ACCUM_PERIOD,
+  RESOURCE_ID,
+  RESOURCE_LIST_ASSIGNMENT_ID,
+  RESOURCE_LIST_ID,
+  RESOURCE_LIST_MEMBER_ID,
+  LAST_UPDATED_BY,
+  LAST_UPDATE_DATE,
+  CREATION_DATE,
+  CREATED_BY,
+  LAST_UPDATE_LOGIN,
+  REQUEST_ID,
+  PROGRAM_APPLICATION_ID,
+  PROGRAM_ID,
+  PROGRAM_UPDATE_DATE,
+  TASKS_RESTRUCTURED_FLAG,
+  SUM_EXCEPTION_CODE,
+  KCA_OPERATION,
+  KCA_SEQ_ID,
+  kca_seq_date
+)
+(
+  SELECT
+    PROJECT_ACCUM_ID,
+    PROJECT_ID,
+    TASK_ID,
+    ACCUM_PERIOD,
+    RESOURCE_ID,
+    RESOURCE_LIST_ASSIGNMENT_ID,
+    RESOURCE_LIST_ID,
+    RESOURCE_LIST_MEMBER_ID,
+    LAST_UPDATED_BY,
+    LAST_UPDATE_DATE,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_LOGIN,
+    REQUEST_ID,
+    PROGRAM_APPLICATION_ID,
+    PROGRAM_ID,
+    PROGRAM_UPDATE_DATE,
+    TASKS_RESTRUCTURED_FLAG,
+    SUM_EXCEPTION_CODE,
+    KCA_OPERATION,
+    KCA_SEQ_ID,
+    kca_seq_date
+  FROM bec_raw_dl_ext.PA_PROJECT_ACCUM_HEADERS
+  WHERE
+    kca_operation <> 'DELETE'
+    AND COALESCE(kca_seq_id, '') <> ''
+    AND (COALESCE(PROJECT_ACCUM_ID, 0), KCA_SEQ_ID) IN (
+      SELECT
+        COALESCE(PROJECT_ACCUM_ID, 0) AS PROJECT_ACCUM_ID,
+        MAX(KCA_SEQ_ID)
+      FROM bec_raw_dl_ext.PA_PROJECT_ACCUM_HEADERS
+      WHERE
+        kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') <> ''
+      GROUP BY
+        COALESCE(PROJECT_ACCUM_ID, 0)
+    )
+    AND kca_seq_date > (
+      SELECT
+        (
+          executebegints - prune_days
+        )
+      FROM bec_etl_ctrl.batch_ods_info
+      WHERE
+        ods_table_name = 'pa_project_accum_headers'
+    )
+);

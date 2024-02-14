@@ -1,0 +1,84 @@
+TRUNCATE table gold_bec_dwh.FACT_MRP_FORECAST_DETAILS;
+INSERT INTO gold_bec_dwh.FACT_MRP_FORECAST_DETAILS
+(
+  SELECT
+    TRANSACTION_ID,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_LOGIN,
+    INVENTORY_ITEM_ID,
+    ORGANIZATION_ID,
+    FORECAST_DESIGNATOR,
+    FORECAST_DATE,
+    ORIGINAL_FORECAST_QUANTITY,
+    CURRENT_FORECAST_QUANTITY,
+    CONFIDENCE_PERCENTAGE,
+    BUCKET_TYPE,
+    RATE_END_DATE,
+    ORIGINATION_TYPE,
+    ORIGINATION_TYPE_DESC AS MEANING,
+    CUSTOMER_ID,
+    SHIP_ID,
+    BILL_ID,
+    COMMENTS,
+    SOURCE_ORGANIZATION_ID,
+    SOURCE_ORGANIZATION_CODE AS ORGANIZATION_CODE,
+    SOURCE_FORECAST_DESIGNATOR,
+    SOURCE_CODE,
+    SOURCE_LINE_ID,
+    END_ITEM_ID,
+    END_PLANNING_BOM_PERCENT,
+    FORECAST_RULE_ID,
+    DEMAND_USAGE_START_DATE,
+    FORECAST_TREND,
+    FOCUS_TYPE,
+    FORECAST_MAD,
+    DEMAND_CLASS,
+    REQUEST_ID,
+    PROGRAM_APPLICATION_ID,
+    PROGRAM_ID,
+    PROGRAM_UPDATE_DATE,
+    DDF_CONTEXT,
+    ATTRIBUTE_CATEGORY,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    PROJECT_ID,
+    TASK_ID, /* MRP_GET_PROJECT.PROJECT(PROJECT_ID) , */
+    LINE_ID, /* MRP_GET_PROJECT.TASK(TASK_ID) , */
+    LINE_CODE,
+    (
+      SELECT
+        system_id
+      FROM bec_etl_ctrl.etlsourceappid
+      WHERE
+        source_system = 'EBS'
+    ) AS source_app_id,
+    (
+      SELECT
+        system_id
+      FROM bec_etl_ctrl.etlsourceappid
+      WHERE
+        source_system = 'EBS'
+    ) || '-' || COALESCE(transaction_id, 0) || '-' || COALESCE(line_id, 0) AS dw_load_id,
+    CURRENT_TIMESTAMP() AS dw_insert_date,
+    CURRENT_TIMESTAMP() AS dw_update_date
+  FROM BEC_ODS.MRP_FORECAST_DATES_V
+);
+UPDATE bec_etl_ctrl.batch_dw_info SET load_type = 'I', last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  dw_table_name = 'fact_mrp_forecast_details' AND batch_name = 'ascp';

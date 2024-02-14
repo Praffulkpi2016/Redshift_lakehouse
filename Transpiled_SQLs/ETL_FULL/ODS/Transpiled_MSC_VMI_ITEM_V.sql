@@ -1,0 +1,38 @@
+DROP TABLE IF EXISTS silver_bec_ods.MSC_VMI_ITEM_V;
+CREATE TABLE silver_bec_ods.MSC_VMI_ITEM_V (
+  PLAN_ID DECIMAL(15, 0),
+  SR_INSTANCE_ID DECIMAL(15, 0),
+  ORGANIZATION_ID DECIMAL(15, 0),
+  INVENTORY_ITEM_ID DECIMAL(15, 0),
+  SUPPLIER_ID DECIMAL(15, 0),
+  SUPPLIER_SITE_ID DECIMAL(15, 0),
+  ITEM_NAME STRING,
+  DESCRIPTION STRING,
+  PLANNER_CODE STRING,
+  BUYER_CODE STRING,
+  `IS_DELETED_FLG` STRING,
+  KCA_OPERATION STRING,
+  kca_seq_id DECIMAL(36, 0),
+  kca_seq_date TIMESTAMP
+);
+/* Insert Records */
+INSERT INTO silver_bec_ods.MSC_VMI_ITEM_V
+SELECT
+  PLAN_ID,
+  SR_INSTANCE_ID,
+  ORGANIZATION_ID,
+  INVENTORY_ITEM_ID,
+  SUPPLIER_ID,
+  SUPPLIER_SITE_ID,
+  ITEM_NAME,
+  DESCRIPTION,
+  PLANNER_CODE,
+  BUYER_CODE,
+  'N' AS IS_DELETED_FLG,
+  kca_operation,
+  CAST(NULLIF(kca_seq_id, '') AS DECIMAL(36, 0)) AS kca_seq_id,
+  kca_seq_date
+FROM bronze_bec_ods_stg.MSC_VMI_ITEM_V;
+UPDATE bec_etl_ctrl.batch_ods_info SET load_type = 'I', last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'msc_vmi_item_v';

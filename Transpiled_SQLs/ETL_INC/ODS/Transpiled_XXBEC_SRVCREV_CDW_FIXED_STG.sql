@@ -1,0 +1,73 @@
+TRUNCATE table silver_bec_ods.XXBEC_SRVCREV_CDW_FIXED_STG;
+/* Insert records */
+INSERT INTO silver_bec_ods.XXBEC_SRVCREV_CDW_FIXED_STG (
+  `source`,
+  contract_group,
+  contract_id,
+  customer_trx_line_id,
+  gl_dist_id,
+  event_id,
+  actual_forecast,
+  ledger_id,
+  ledger_name,
+  org_id,
+  org_name,
+  site_id,
+  revenue_type,
+  transaction_currency,
+  accounted_currency,
+  period_name,
+  revenue_amount_trans_curr,
+  revenue_amount_acctd_curr,
+  acctd_amount_ledger_curr,
+  conversion_rate,
+  last_update_date,
+  extract_date,
+  no_days,
+  from_date,
+  to_date,
+  period_end_date,
+  query_name,
+  kca_operation,
+  is_deleted_flg,
+  kca_seq_id,
+  kca_seq_date
+)
+(
+  SELECT
+    `source`,
+    contract_group,
+    contract_id,
+    customer_trx_line_id,
+    gl_dist_id,
+    event_id,
+    actual_forecast,
+    ledger_id,
+    ledger_name,
+    org_id,
+    org_name,
+    site_id,
+    revenue_type,
+    transaction_currency,
+    accounted_currency,
+    period_name,
+    revenue_amount_trans_curr,
+    revenue_amount_acctd_curr,
+    acctd_amount_ledger_curr,
+    conversion_rate,
+    last_update_date,
+    extract_date,
+    no_days,
+    from_date,
+    to_date,
+    period_end_date,
+    query_name,
+    KCA_OPERATION,
+    'N' AS IS_DELETED_FLG,
+    CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+    KCA_SEQ_DATE
+  FROM bronze_bec_ods_stg.XXBEC_SRVCREV_CDW_FIXED_STG
+);
+UPDATE bec_etl_ctrl.batch_ods_info SET last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'xxbec_srvcrev_cdw_fixed_stg';

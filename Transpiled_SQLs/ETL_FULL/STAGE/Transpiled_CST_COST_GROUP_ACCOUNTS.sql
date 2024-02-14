@@ -1,0 +1,19 @@
+DROP table IF EXISTS bronze_bec_ods_stg.CST_COST_GROUP_ACCOUNTS;
+CREATE TABLE bronze_bec_ods_stg.CST_COST_GROUP_ACCOUNTS AS
+SELECT
+  *
+FROM bec_raw_dl_ext.CST_COST_GROUP_ACCOUNTS
+WHERE
+  kca_operation <> 'DELETE'
+  AND (COST_GROUP_ID, ORGANIZATION_ID, LAST_UPDATE_DATE) IN (
+    SELECT
+      COST_GROUP_ID,
+      ORGANIZATION_ID,
+      MAX(LAST_UPDATE_DATE)
+    FROM bec_raw_dl_ext.CST_COST_GROUP_ACCOUNTS
+    WHERE
+      kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') = ''
+    GROUP BY
+      COST_GROUP_ID,
+      ORGANIZATION_ID
+  );

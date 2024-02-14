@@ -1,0 +1,70 @@
+DROP TABLE IF EXISTS silver_bec_ods.XXBEC_CVMI_CONS_CAL_FINAL;
+CREATE TABLE IF NOT EXISTS silver_bec_ods.XXBEC_CVMI_CONS_CAL_FINAL (
+  plan_name STRING,
+  ran_date TIMESTAMP,
+  as_of_date TIMESTAMP,
+  part_number STRING,
+  organization_id DECIMAL(15, 0),
+  demand DECIMAL(28, 10),
+  bqoh DECIMAL(28, 10),
+  cvmi_qoh DECIMAL(28, 10),
+  ncvmi_receipts DECIMAL(28, 10),
+  cvmi_receipts DECIMAL(28, 10),
+  remaining DECIMAL(28, 10),
+  demand_pulls DECIMAL(28, 10),
+  aging_pulls DECIMAL(28, 10),
+  future_consumptions DECIMAL(28, 10),
+  ending_bqoh DECIMAL(28, 10),
+  ending_cvmi_bqoh DECIMAL(28, 10),
+  KCA_OPERATION STRING,
+  IS_DELETED_FLG STRING,
+  kca_seq_id DECIMAL(36, 0),
+  kca_seq_date TIMESTAMP
+);
+INSERT INTO silver_bec_ods.XXBEC_CVMI_CONS_CAL_FINAL (
+  plan_name,
+  ran_date,
+  as_of_date,
+  part_number,
+  organization_id,
+  demand,
+  bqoh,
+  cvmi_qoh,
+  ncvmi_receipts,
+  cvmi_receipts,
+  remaining,
+  demand_pulls,
+  aging_pulls,
+  future_consumptions,
+  ending_bqoh,
+  ending_cvmi_bqoh,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  kca_seq_id,
+  kca_seq_date
+)
+SELECT
+  plan_name,
+  ran_date,
+  as_of_date,
+  part_number,
+  organization_id,
+  demand,
+  bqoh,
+  cvmi_qoh,
+  ncvmi_receipts,
+  cvmi_receipts,
+  remaining,
+  demand_pulls,
+  aging_pulls,
+  future_consumptions,
+  ending_bqoh,
+  ending_cvmi_bqoh,
+  KCA_OPERATION,
+  'N' AS IS_DELETED_FLG,
+  CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+  kca_seq_date
+FROM bronze_bec_ods_stg.XXBEC_CVMI_CONS_CAL_FINAL;
+UPDATE bec_etl_ctrl.batch_ods_info SET load_type = 'I', last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'xxbec_cvmi_cons_cal_final';

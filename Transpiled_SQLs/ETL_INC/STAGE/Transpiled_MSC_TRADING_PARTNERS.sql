@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.MSC_TRADING_PARTNERS;
+CREATE TABLE bronze_bec_ods_stg.MSC_TRADING_PARTNERS AS
+SELECT
+  *
+FROM bec_raw_dl_ext.MSC_TRADING_PARTNERS
+WHERE
+  kca_operation <> 'DELETE';

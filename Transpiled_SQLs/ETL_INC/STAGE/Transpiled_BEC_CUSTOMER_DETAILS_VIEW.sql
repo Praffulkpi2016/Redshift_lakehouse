@@ -1,0 +1,7 @@
+TRUNCATE table bronze_bec_ods_stg.BEC_CUSTOMER_DETAILS_VIEW;
+INSERT INTO bronze_bec_ods_stg.BEC_CUSTOMER_DETAILS_VIEW
+SELECT
+  *
+FROM bec_raw_dl_ext.BEC_CUSTOMER_DETAILS_VIEW
+WHERE
+  kca_operation <> 'DELETE';

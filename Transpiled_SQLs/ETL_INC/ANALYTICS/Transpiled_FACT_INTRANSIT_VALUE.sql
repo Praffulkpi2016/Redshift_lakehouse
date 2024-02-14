@@ -1,0 +1,189 @@
+TRUNCATE table gold_bec_dwh.FACT_INTRANSIT_VALUE_TMP;
+/* Insert incremental data into temp table. */
+INSERT INTO gold_bec_dwh.FACT_INTRANSIT_VALUE_TMP
+(
+  SELECT DISTINCT
+    ms.SUPPLY_SOURCE_ID,
+    ITEM_ID,
+    INTRANSIT_OWNING_ORG_ID
+  FROM BEC_ODS.MTL_SUPPLY AS MS, BEC_ODS.CST_ITEM_COSTS AS CIC, BEC_ODS.RCV_SERIALS_SUPPLY AS SER, BEC_ODS.RCV_LOTS_SUPPLY AS LOT, BEC_ODS.RCV_SHIPMENT_HEADERS AS RSH, BEC_ODS.ORG_ORGANIZATION_DEFINITIONS AS OOD1, BEC_ODS.ORG_ORGANIZATION_DEFINITIONS AS OOD2
+  WHERE
+    1 = 1
+    AND MS.SUPPLY_TYPE_CODE IN ('SHIPMENT', 'RECEIVING')
+    AND MS.DESTINATION_TYPE_CODE = 'INVENTORY'
+    AND MS.ITEM_ID = CIC.INVENTORY_ITEM_ID
+    AND MS.INTRANSIT_OWNING_ORG_ID = CIC.ORGANIZATION_ID
+    AND CIC.COST_TYPE_ID = 1
+    AND MS.SHIPMENT_LINE_ID = SER.SHIPMENT_LINE_ID()
+    AND MS.SHIPMENT_LINE_ID = LOT.SHIPMENT_LINE_ID()
+    AND MS.SHIPMENT_HEADER_ID = RSH.SHIPMENT_HEADER_ID()
+    AND MS.TO_ORGANIZATION_ID = OOD1.ORGANIZATION_ID()
+    AND MS.FROM_ORGANIZATION_ID = OOD2.ORGANIZATION_ID()
+    AND (
+      MS.kca_seq_date > (
+        SELECT
+          (
+            executebegints - prune_days
+          )
+        FROM bec_etl_ctrl.batch_dw_info
+        WHERE
+          dw_table_name = 'fact_intransit_value' AND batch_name = 'om'
+      )
+      OR SER.kca_seq_date > (
+        SELECT
+          (
+            executebegints - prune_days
+          )
+        FROM bec_etl_ctrl.batch_dw_info
+        WHERE
+          dw_table_name = 'fact_intransit_value' AND batch_name = 'om'
+      )
+      OR LOT.kca_seq_date > (
+        SELECT
+          (
+            executebegints - prune_days
+          )
+        FROM bec_etl_ctrl.batch_dw_info
+        WHERE
+          dw_table_name = 'fact_intransit_value' AND batch_name = 'om'
+      )
+      OR CIC.kca_seq_date > (
+        SELECT
+          (
+            executebegints - prune_days
+          )
+        FROM bec_etl_ctrl.batch_dw_info
+        WHERE
+          dw_table_name = 'fact_intransit_value' AND batch_name = 'om'
+      )
+    )
+);
+/* DELETE FROM FACT TABLE USING TMP TABLE */
+DELETE FROM gold_bec_dwh.FACT_INTRANSIT_VALUE
+WHERE
+  (SUPPLY_SOURCE_ID, ITEM_ID, OWNING_ORGANIZATION_ID) IN (
+    SELECT
+      SUPPLY_SOURCE_ID,
+      ITEM_ID,
+      OWNING_ORGANIZATION_ID
+    FROM gold_bec_dwh.FACT_INTRANSIT_VALUE_TMP
+  );
+/* INSERT INTO FACT TABLE */
+INSERT INTO gold_bec_dwh.FACT_INTRANSIT_VALUE
+(
+  SELECT
+    MS.ITEM_ID,
+    MS.INTRANSIT_OWNING_ORG_ID AS OWNING_ORGANIZATION_ID,
+    RSH.SHIPMENT_NUM,
+    MS.MRP_PRIMARY_QUANTITY,
+    SER.SERIAL_NUM,
+    LOT.LOT_NUM,
+    CASE
+      WHEN SER.SERIAL_NUM IS NULL
+      THEN COALESCE(LOT.PRIMARY_QUANTITY, MS.MRP_PRIMARY_QUANTITY)
+      ELSE 1
+    END AS SET_LOT_QTY,
+    CIC.ITEM_COST,
+    CASE
+      WHEN SER.SERIAL_NUM IS NULL
+      THEN COALESCE(LOT.PRIMARY_QUANTITY, MS.MRP_PRIMARY_QUANTITY)
+      ELSE 1
+    END * CIC.ITEM_COST AS EXTENDED_COST,
+    MS.SUPPLY_TYPE_CODE,
+    MS.SUPPLY_SOURCE_ID,
+    MS.REQ_HEADER_ID,
+    MS.REQ_LINE_ID,
+    MS.SHIPMENT_HEADER_ID,
+    MS.SHIPMENT_LINE_ID,
+    MS.UNIT_OF_MEASURE,
+    MS.RECEIPT_DATE,
+    MS.NEED_BY_DATE,
+    MS.EXPECTED_DELIVERY_DATE,
+    MS.DESTINATION_TYPE_CODE,
+    MS.FROM_ORGANIZATION_ID,
+    MS.TO_ORGANIZATION_ID,
+    MS.MRP_DESTINATION_TYPE_CODE,
+    RSH.SHIPPED_DATE,
+    OOD1.ORGANIZATION_CODE AS TO_ORG_CODE,
+    OOD2.ORGANIZATION_CODE AS FROM_ORG_CODE,
+    MS.FROM_SUBINVENTORY,
+    MS.TO_SUBINVENTORY,
+    'N' AS IS_DELETED_FLG, /* audit columns */
+    (
+      SELECT
+        SYSTEM_ID
+      FROM BEC_ETL_CTRL.ETLSOURCEAPPID
+      WHERE
+        SOURCE_SYSTEM = 'EBS'
+    ) AS SOURCE_APP_ID,
+    (
+      SELECT
+        SYSTEM_ID
+      FROM BEC_ETL_CTRL.ETLSOURCEAPPID
+      WHERE
+        SOURCE_SYSTEM = 'EBS'
+    ) || '-' || COALESCE(MS.SUPPLY_SOURCE_ID, 0) || '-' || COALESCE(MS.SUPPLY_TYPE_CODE, 'NA') || '-' || COALESCE(SER.SERIAL_NUM, 'NA') || '-' || COALESCE(LOT.LOT_NUM, 'NA') AS DW_LOAD_ID,
+    CURRENT_TIMESTAMP() AS DW_INSERT_DATE,
+    CURRENT_TIMESTAMP() AS DW_UPDATE_DATE
+  FROM (
+    SELECT
+      *
+    FROM BEC_ODS.MTL_SUPPLY
+    WHERE
+      IS_DELETED_FLG <> 'Y'
+  ) AS MS, (
+    SELECT
+      *
+    FROM BEC_ODS.CST_ITEM_COSTS
+    WHERE
+      IS_DELETED_FLG <> 'Y'
+  ) AS CIC, (
+    SELECT
+      *
+    FROM BEC_ODS.RCV_SERIALS_SUPPLY
+    WHERE
+      IS_DELETED_FLG <> 'Y'
+  ) AS SER, (
+    SELECT
+      *
+    FROM BEC_ODS.RCV_LOTS_SUPPLY
+    WHERE
+      IS_DELETED_FLG <> 'Y'
+  ) AS LOT, (
+    SELECT
+      *
+    FROM BEC_ODS.RCV_SHIPMENT_HEADERS
+    WHERE
+      IS_DELETED_FLG <> 'Y'
+  ) AS RSH, (
+    SELECT
+      *
+    FROM BEC_ODS.ORG_ORGANIZATION_DEFINITIONS
+    WHERE
+      IS_DELETED_FLG <> 'Y'
+  ) AS OOD1, (
+    SELECT
+      *
+    FROM BEC_ODS.ORG_ORGANIZATION_DEFINITIONS
+    WHERE
+      IS_DELETED_FLG <> 'Y'
+  ) AS OOD2, gold_bec_dwh.FACT_INTRANSIT_VALUE_TMP AS tmp
+  WHERE
+    1 = 1
+    AND MS.SUPPLY_TYPE_CODE IN ('SHIPMENT', 'RECEIVING')
+    AND MS.DESTINATION_TYPE_CODE = 'INVENTORY'
+    AND MS.ITEM_ID = CIC.INVENTORY_ITEM_ID
+    AND MS.INTRANSIT_OWNING_ORG_ID = CIC.ORGANIZATION_ID
+    AND CIC.COST_TYPE_ID = 1
+    AND MS.SHIPMENT_LINE_ID = SER.SHIPMENT_LINE_ID()
+    AND MS.SHIPMENT_LINE_ID = LOT.SHIPMENT_LINE_ID()
+    AND MS.SHIPMENT_HEADER_ID = RSH.SHIPMENT_HEADER_ID()
+    AND MS.TO_ORGANIZATION_ID = OOD1.ORGANIZATION_ID()
+    AND MS.FROM_ORGANIZATION_ID = OOD2.ORGANIZATION_ID()
+    AND MS.SUPPLY_SOURCE_ID = tmp.SUPPLY_SOURCE_ID
+    AND MS.item_id = tmp.item_id
+    AND MS.INTRANSIT_OWNING_ORG_ID = tmp.OWNING_ORGANIZATION_ID
+);
+UPDATE bec_etl_ctrl.batch_dw_info SET load_type = 'I', last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  dw_table_name = 'fact_intransit_value' AND batch_name = 'om';

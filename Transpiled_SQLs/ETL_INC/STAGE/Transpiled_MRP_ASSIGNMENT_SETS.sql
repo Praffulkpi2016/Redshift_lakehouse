@@ -1,0 +1,91 @@
+TRUNCATE table bronze_bec_ods_stg.MRP_ASSIGNMENT_SETS;
+INSERT INTO bronze_bec_ods_stg.MRP_ASSIGNMENT_SETS (
+  ASSIGNMENT_SET_ID,
+  ASSIGNMENT_SET_NAME,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  CREATION_DATE,
+  CREATED_BY,
+  LAST_UPDATE_LOGIN,
+  REQUEST_ID,
+  PROGRAM_APPLICATION_ID,
+  PROGRAM_ID,
+  PROGRAM_UPDATE_DATE,
+  DESCRIPTION,
+  ATTRIBUTE_CATEGORY,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  KCA_OPERATION,
+  kca_seq_id,
+  kca_seq_date
+)
+(
+  SELECT
+    ASSIGNMENT_SET_ID,
+    ASSIGNMENT_SET_NAME,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_LOGIN,
+    REQUEST_ID,
+    PROGRAM_APPLICATION_ID,
+    PROGRAM_ID,
+    PROGRAM_UPDATE_DATE,
+    DESCRIPTION,
+    ATTRIBUTE_CATEGORY,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    KCA_OPERATION,
+    kca_seq_id,
+    kca_seq_date
+  FROM bec_raw_dl_ext.MRP_ASSIGNMENT_SETS
+  WHERE
+    kca_operation <> 'DELETE'
+    AND COALESCE(kca_seq_id, '') <> ''
+    AND (ASSIGNMENT_SET_ID, kca_seq_id) IN (
+      SELECT
+        ASSIGNMENT_SET_ID,
+        MAX(kca_seq_id)
+      FROM bec_raw_dl_ext.MRP_ASSIGNMENT_SETS
+      WHERE
+        kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') <> ''
+      GROUP BY
+        ASSIGNMENT_SET_ID
+    )
+    AND kca_seq_date > (
+      SELECT
+        (
+          executebegints - prune_days
+        )
+      FROM bec_etl_ctrl.batch_ods_info
+      WHERE
+        ods_table_name = 'mrp_assignment_sets'
+    )
+);

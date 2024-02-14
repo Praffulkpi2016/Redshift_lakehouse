@@ -1,0 +1,126 @@
+/* Delete Records */
+DELETE FROM silver_bec_ods.JTF_RS_GROUPS_B
+WHERE
+  (
+    COALESCE(GROUP_ID, 0)
+  ) IN (
+    SELECT
+      COALESCE(stg.GROUP_ID, 0) AS GROUP_ID
+    FROM silver_bec_ods.JTF_RS_GROUPS_B AS ods, bronze_bec_ods_stg.JTF_RS_GROUPS_B AS stg
+    WHERE
+      COALESCE(ods.GROUP_ID, 0) = COALESCE(stg.GROUP_ID, 0)
+      AND stg.kca_operation IN ('INSERT', 'UPDATE')
+  );
+/* Insert records */
+INSERT INTO silver_bec_ods.JTF_RS_GROUPS_B (
+  GROUP_ID,
+  GROUP_NUMBER,
+  CREATED_BY,
+  CREATION_DATE,
+  LAST_UPDATED_BY,
+  LAST_UPDATE_DATE,
+  LAST_UPDATE_LOGIN,
+  EXCLUSIVE_FLAG,
+  START_DATE_ACTIVE,
+  END_DATE_ACTIVE,
+  ACCOUNTING_CODE,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  ATTRIBUTE_CATEGORY,
+  EMAIL_ADDRESS,
+  OBJECT_VERSION_NUMBER,
+  SECURITY_GROUP_ID,
+  TIME_ZONE,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  kca_seq_ID,
+  kca_seq_date
+)
+(
+  SELECT
+    GROUP_ID,
+    GROUP_NUMBER,
+    CREATED_BY,
+    CREATION_DATE,
+    LAST_UPDATED_BY,
+    LAST_UPDATE_DATE,
+    LAST_UPDATE_LOGIN,
+    EXCLUSIVE_FLAG,
+    START_DATE_ACTIVE,
+    END_DATE_ACTIVE,
+    ACCOUNTING_CODE,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    ATTRIBUTE_CATEGORY,
+    EMAIL_ADDRESS,
+    OBJECT_VERSION_NUMBER,
+    SECURITY_GROUP_ID,
+    TIME_ZONE,
+    KCA_OPERATION,
+    'N' AS IS_DELETED_FLG,
+    CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+    kca_seq_date
+  FROM bronze_bec_ods_stg.JTF_RS_GROUPS_B
+  WHERE
+    kca_operation IN ('INSERT', 'UPDATE')
+    AND (COALESCE(GROUP_ID, 0), kca_seq_ID) IN (
+      SELECT
+        COALESCE(GROUP_ID, 0) AS GROUP_ID,
+        MAX(kca_seq_ID) AS kca_seq_ID
+      FROM bronze_bec_ods_stg.JTF_RS_GROUPS_B
+      WHERE
+        kca_operation IN ('INSERT', 'UPDATE')
+      GROUP BY
+        COALESCE(GROUP_ID, 0)
+    )
+);
+/* Soft delete */
+UPDATE silver_bec_ods.JTF_RS_GROUPS_B SET IS_DELETED_FLG = 'N';
+UPDATE silver_bec_ods.JTF_RS_GROUPS_B SET IS_DELETED_FLG = 'Y'
+WHERE
+  (
+    GROUP_ID
+  ) IN (
+    SELECT
+      GROUP_ID
+    FROM bec_raw_dl_ext.JTF_RS_GROUPS_B
+    WHERE
+      (GROUP_ID, KCA_SEQ_ID) IN (
+        SELECT
+          GROUP_ID,
+          MAX(KCA_SEQ_ID) AS KCA_SEQ_ID
+        FROM bec_raw_dl_ext.JTF_RS_GROUPS_B
+        GROUP BY
+          GROUP_ID
+      )
+      AND kca_operation = 'DELETE'
+  );
+UPDATE bec_etl_ctrl.batch_ods_info SET last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'jtf_rs_groups_b';

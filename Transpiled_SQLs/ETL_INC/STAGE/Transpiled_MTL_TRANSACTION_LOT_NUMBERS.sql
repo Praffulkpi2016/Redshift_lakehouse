@@ -1,0 +1,7 @@
+DROP table IF EXISTS bronze_bec_ods_stg.MTL_TRANSACTION_LOT_NUMBERS;
+CREATE TABLE bronze_bec_ods_stg.MTL_TRANSACTION_LOT_NUMBERS AS
+SELECT
+  *
+FROM bec_raw_dl_ext.MTL_TRANSACTION_LOT_NUMBERS
+WHERE
+  kca_operation <> 'DELETE';

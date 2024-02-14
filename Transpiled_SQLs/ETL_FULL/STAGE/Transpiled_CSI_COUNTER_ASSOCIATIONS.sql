@@ -1,0 +1,17 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.CSI_COUNTER_ASSOCIATIONS;
+CREATE TABLE bronze_bec_ods_stg.CSI_COUNTER_ASSOCIATIONS AS
+SELECT
+  *
+FROM bec_raw_dl_ext.CSI_COUNTER_ASSOCIATIONS
+WHERE
+  kca_operation <> 'DELETE'
+  AND (COALESCE(INSTANCE_ASSOCIATION_ID, 0), last_update_date) IN (
+    SELECT
+      COALESCE(INSTANCE_ASSOCIATION_ID, 0) AS INSTANCE_ASSOCIATION_ID,
+      MAX(last_update_date) AS last_update_date
+    FROM bec_raw_dl_ext.CSI_COUNTER_ASSOCIATIONS
+    WHERE
+      kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') = ''
+    GROUP BY
+      COALESCE(INSTANCE_ASSOCIATION_ID, 0)
+  );

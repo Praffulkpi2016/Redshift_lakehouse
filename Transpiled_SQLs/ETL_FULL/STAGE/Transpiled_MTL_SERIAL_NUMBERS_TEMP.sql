@@ -1,0 +1,19 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.MTL_SERIAL_NUMBERS_TEMP;
+CREATE TABLE bronze_bec_ods_stg.MTL_SERIAL_NUMBERS_TEMP AS
+SELECT
+  *
+FROM bec_raw_dl_ext.MTL_SERIAL_NUMBERS_TEMP
+WHERE
+  kca_operation <> 'DELETE'
+  AND (TRANSACTION_TEMP_ID, FM_SERIAL_NUMBER, last_update_date) IN (
+    SELECT
+      COALESCE(TRANSACTION_TEMP_ID, 0) AS TRANSACTION_TEMP_ID,
+      COALESCE(FM_SERIAL_NUMBER, 'NA') AS FM_SERIAL_NUMBER,
+      MAX(last_update_date)
+    FROM bec_raw_dl_ext.MTL_SERIAL_NUMBERS_TEMP
+    WHERE
+      kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') = ''
+    GROUP BY
+      COALESCE(TRANSACTION_TEMP_ID, 0),
+      COALESCE(FM_SERIAL_NUMBER, 'NA')
+  );

@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.BEC_CUSTOMER_DETAILS_VIEW;
+CREATE TABLE bronze_bec_ods_stg.BEC_CUSTOMER_DETAILS_VIEW AS
+SELECT
+  *
+FROM bec_raw_dl_ext.BEC_CUSTOMER_DETAILS_VIEW
+WHERE
+  kca_operation <> 'DELETE';

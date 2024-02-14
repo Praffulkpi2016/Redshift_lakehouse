@@ -1,0 +1,158 @@
+/* Delete Records */
+DELETE FROM silver_bec_ods.fnd_lookup_values
+WHERE
+  (LOOKUP_TYPE, LANGUAGE, SECURITY_GROUP_ID, LOOKUP_CODE, VIEW_APPLICATION_ID) IN (
+    SELECT
+      stg.LOOKUP_TYPE,
+      stg.LANGUAGE,
+      stg.SECURITY_GROUP_ID,
+      stg.LOOKUP_CODE,
+      stg.VIEW_APPLICATION_ID
+    FROM silver_bec_ods.fnd_lookup_values AS ods, bronze_bec_ods_stg.fnd_lookup_values AS stg
+    WHERE
+      ods.LOOKUP_TYPE = stg.LOOKUP_TYPE
+      AND ods.LANGUAGE = stg.LANGUAGE
+      AND ods.SECURITY_GROUP_ID = stg.SECURITY_GROUP_ID
+      AND ods.LOOKUP_CODE = stg.LOOKUP_CODE
+      AND ods.VIEW_APPLICATION_ID = stg.VIEW_APPLICATION_ID
+      AND stg.kca_operation IN ('INSERT', 'UPDATE')
+  );
+INSERT INTO silver_bec_ods.fnd_lookup_values (
+  LOOKUP_TYPE,
+  LANGUAGE,
+  LOOKUP_CODE,
+  MEANING,
+  DESCRIPTION,
+  ENABLED_FLAG,
+  START_DATE_ACTIVE,
+  END_DATE_ACTIVE,
+  CREATED_BY,
+  CREATION_DATE,
+  LAST_UPDATED_BY,
+  LAST_UPDATE_LOGIN,
+  LAST_UPDATE_DATE,
+  SOURCE_LANG,
+  SECURITY_GROUP_ID,
+  VIEW_APPLICATION_ID,
+  TERRITORY_CODE,
+  ATTRIBUTE_CATEGORY,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  `TAG`,
+  LEAF_NODE,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  KCA_SEQ_ID,
+  kca_seq_date
+)
+(
+  SELECT
+    LOOKUP_TYPE,
+    LANGUAGE,
+    LOOKUP_CODE,
+    MEANING,
+    DESCRIPTION,
+    ENABLED_FLAG,
+    START_DATE_ACTIVE,
+    END_DATE_ACTIVE,
+    CREATED_BY,
+    CREATION_DATE,
+    LAST_UPDATED_BY,
+    LAST_UPDATE_LOGIN,
+    LAST_UPDATE_DATE,
+    SOURCE_LANG,
+    SECURITY_GROUP_ID,
+    VIEW_APPLICATION_ID,
+    TERRITORY_CODE,
+    ATTRIBUTE_CATEGORY,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    `TAG`,
+    LEAF_NODE,
+    KCA_OPERATION,
+    'N' AS IS_DELETED_FLG,
+    CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+    kca_seq_date
+  FROM bronze_bec_ods_stg.fnd_lookup_values
+  WHERE
+    kca_operation IN ('INSERT', 'UPDATE')
+    AND (LOOKUP_TYPE, LANGUAGE, SECURITY_GROUP_ID, LOOKUP_CODE, VIEW_APPLICATION_ID, kca_seq_id) IN (
+      SELECT
+        LOOKUP_TYPE,
+        LANGUAGE,
+        SECURITY_GROUP_ID,
+        LOOKUP_CODE,
+        VIEW_APPLICATION_ID,
+        MAX(kca_seq_id)
+      FROM bronze_bec_ods_stg.fnd_lookup_values
+      WHERE
+        kca_operation IN ('INSERT', 'UPDATE')
+      GROUP BY
+        LOOKUP_TYPE,
+        LANGUAGE,
+        SECURITY_GROUP_ID,
+        LOOKUP_CODE,
+        VIEW_APPLICATION_ID,
+        last_update_date
+    )
+);
+/* Soft delete */
+UPDATE silver_bec_ods.fnd_lookup_values SET IS_DELETED_FLG = 'N';
+UPDATE silver_bec_ods.fnd_lookup_values SET IS_DELETED_FLG = 'Y'
+WHERE
+  (LOOKUP_TYPE, LANGUAGE, SECURITY_GROUP_ID, LOOKUP_CODE, VIEW_APPLICATION_ID) IN (
+    SELECT
+      LOOKUP_TYPE,
+      LANGUAGE,
+      SECURITY_GROUP_ID,
+      LOOKUP_CODE,
+      VIEW_APPLICATION_ID
+    FROM bec_raw_dl_ext.fnd_lookup_values
+    WHERE
+      (LOOKUP_TYPE, LANGUAGE, SECURITY_GROUP_ID, LOOKUP_CODE, VIEW_APPLICATION_ID, KCA_SEQ_ID) IN (
+        SELECT
+          LOOKUP_TYPE,
+          LANGUAGE,
+          SECURITY_GROUP_ID,
+          LOOKUP_CODE,
+          VIEW_APPLICATION_ID,
+          MAX(KCA_SEQ_ID) AS KCA_SEQ_ID
+        FROM bec_raw_dl_ext.fnd_lookup_values
+        GROUP BY
+          LOOKUP_TYPE,
+          LANGUAGE,
+          SECURITY_GROUP_ID,
+          LOOKUP_CODE,
+          VIEW_APPLICATION_ID
+      )
+      AND kca_operation = 'DELETE'
+  );
+UPDATE bec_etl_ctrl.batch_ods_info SET last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'fnd_lookup_values';

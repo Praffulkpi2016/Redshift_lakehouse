@@ -1,0 +1,117 @@
+/* Delete Records */
+DELETE FROM silver_bec_ods.MSC_COMPANIES
+WHERE
+  (COMPANY_ID, COMPANY_NAME) IN (
+    SELECT
+      stg.COMPANY_ID,
+      stg.COMPANY_NAME
+    FROM silver_bec_ods.MSC_COMPANIES AS ods, bronze_bec_ods_stg.MSC_COMPANIES AS stg
+    WHERE
+      ods.COMPANY_ID = stg.COMPANY_ID
+      AND ods.COMPANY_NAME = stg.COMPANY_NAME
+      AND stg.kca_operation IN ('INSERT', 'UPDATE')
+  );
+/* Insert records */
+INSERT INTO silver_bec_ods.MSC_COMPANIES (
+  COMPANY_ID,
+  COMPANY_NAME,
+  DISABLE_DATE,
+  REFRESH_NUMBER,
+  CREATION_DATE,
+  CREATED_BY,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  LAST_UPDATE_LOGIN,
+  ATTRIBUTE_CATEGORY,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  kca_seq_id,
+  kca_seq_date
+)
+(
+  SELECT
+    COMPANY_ID,
+    COMPANY_NAME,
+    DISABLE_DATE,
+    REFRESH_NUMBER,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    LAST_UPDATE_LOGIN,
+    ATTRIBUTE_CATEGORY,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    KCA_OPERATION,
+    'N' AS IS_DELETED_FLG,
+    CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+    kca_seq_date
+  FROM bronze_bec_ods_stg.MSC_COMPANIES
+  WHERE
+    kca_operation IN ('INSERT', 'UPDATE')
+    AND (COMPANY_ID, COMPANY_NAME, kca_seq_id) IN (
+      SELECT
+        COMPANY_ID,
+        COMPANY_NAME,
+        MAX(kca_seq_id)
+      FROM bronze_bec_ods_stg.MSC_COMPANIES
+      WHERE
+        kca_operation IN ('INSERT', 'UPDATE')
+      GROUP BY
+        COMPANY_ID,
+        COMPANY_NAME
+    )
+);
+/* Soft delete */
+UPDATE silver_bec_ods.MSC_COMPANIES SET IS_DELETED_FLG = 'N';
+UPDATE silver_bec_ods.MSC_COMPANIES SET IS_DELETED_FLG = 'Y'
+WHERE
+  (COMPANY_ID, COMPANY_NAME) IN (
+    SELECT
+      COMPANY_ID,
+      COMPANY_NAME
+    FROM bec_raw_dl_ext.MSC_COMPANIES
+    WHERE
+      (COMPANY_ID, COMPANY_NAME, KCA_SEQ_ID) IN (
+        SELECT
+          COMPANY_ID,
+          COMPANY_NAME,
+          MAX(KCA_SEQ_ID) AS KCA_SEQ_ID
+        FROM bec_raw_dl_ext.MSC_COMPANIES
+        GROUP BY
+          COMPANY_ID,
+          COMPANY_NAME
+      )
+      AND kca_operation = 'DELETE'
+  );
+UPDATE bec_etl_ctrl.batch_ods_info SET last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'msc_companies';

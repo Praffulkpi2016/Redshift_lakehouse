@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.RCV_ROUTING_HEADERS;
+CREATE TABLE bronze_bec_ods_stg.RCV_ROUTING_HEADERS AS
+SELECT
+  *
+FROM bec_raw_dl_ext.RCV_ROUTING_HEADERS
+WHERE
+  kca_operation <> 'DELETE';

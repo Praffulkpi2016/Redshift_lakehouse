@@ -1,0 +1,92 @@
+/* Delete Records */
+DELETE FROM silver_bec_ods.CS_BILLING_TYPE_CATEGORIES
+WHERE
+  (
+    COALESCE(BILLING_TYPE, 'NA')
+  ) IN (
+    SELECT
+      COALESCE(stg.BILLING_TYPE, 'NA') AS BILLING_TYPE
+    FROM silver_bec_ods.CS_BILLING_TYPE_CATEGORIES AS ods, bronze_bec_ods_stg.CS_BILLING_TYPE_CATEGORIES AS stg
+    WHERE
+      COALESCE(ods.BILLING_TYPE, 'NA') = COALESCE(stg.BILLING_TYPE, 'NA')
+      AND stg.kca_operation IN ('INSERT', 'UPDATE')
+  );
+/* Insert records */
+INSERT INTO silver_bec_ods.CS_BILLING_TYPE_CATEGORIES (
+  BILLING_TYPE,
+  BILLING_CATEGORY,
+  ROLLUP_ITEM_ID,
+  START_DATE_ACTIVE,
+  END_DATE_ACTIVE,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  CREATION_DATE,
+  CREATED_BY,
+  LAST_UPDATE_LOGIN,
+  SECURITY_GROUP_ID,
+  SEEDED_FLAG,
+  ZD_EDITION_NAME,
+  ZD_SYNC,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  kca_seq_ID,
+  kca_seq_date
+)
+(
+  SELECT
+    BILLING_TYPE,
+    BILLING_CATEGORY,
+    ROLLUP_ITEM_ID,
+    START_DATE_ACTIVE,
+    END_DATE_ACTIVE,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_LOGIN,
+    SECURITY_GROUP_ID,
+    SEEDED_FLAG,
+    ZD_EDITION_NAME,
+    ZD_SYNC,
+    KCA_OPERATION,
+    'N' AS IS_DELETED_FLG,
+    CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+    kca_seq_date
+  FROM bronze_bec_ods_stg.CS_BILLING_TYPE_CATEGORIES
+  WHERE
+    kca_operation IN ('INSERT', 'UPDATE')
+    AND (COALESCE(BILLING_TYPE, 'NA'), kca_seq_ID) IN (
+      SELECT
+        COALESCE(BILLING_TYPE, 'NA') AS BILLING_TYPE,
+        MAX(kca_seq_ID) AS kca_seq_ID
+      FROM bronze_bec_ods_stg.CS_BILLING_TYPE_CATEGORIES
+      WHERE
+        kca_operation IN ('INSERT', 'UPDATE')
+      GROUP BY
+        COALESCE(BILLING_TYPE, 'NA')
+    )
+);
+/* Soft delete */
+UPDATE silver_bec_ods.CS_BILLING_TYPE_CATEGORIES SET IS_DELETED_FLG = 'N';
+UPDATE silver_bec_ods.CS_BILLING_TYPE_CATEGORIES SET IS_DELETED_FLG = 'Y'
+WHERE
+  (
+    COALESCE(BILLING_TYPE, 'NA')
+  ) IN (
+    SELECT
+      COALESCE(BILLING_TYPE, 'NA')
+    FROM bec_raw_dl_ext.CS_BILLING_TYPE_CATEGORIES
+    WHERE
+      (COALESCE(BILLING_TYPE, 'NA'), KCA_SEQ_ID) IN (
+        SELECT
+          COALESCE(BILLING_TYPE, 'NA'),
+          MAX(KCA_SEQ_ID) AS KCA_SEQ_ID
+        FROM bec_raw_dl_ext.CS_BILLING_TYPE_CATEGORIES
+        GROUP BY
+          COALESCE(BILLING_TYPE, 'NA')
+      )
+      AND kca_operation = 'DELETE'
+  );
+UPDATE bec_etl_ctrl.batch_ods_info SET last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'cs_billing_type_categories';

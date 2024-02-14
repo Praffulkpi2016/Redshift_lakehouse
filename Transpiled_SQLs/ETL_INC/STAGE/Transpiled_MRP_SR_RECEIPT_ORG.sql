@@ -1,0 +1,97 @@
+TRUNCATE table bronze_bec_ods_stg.MRP_SR_RECEIPT_ORG;
+INSERT INTO bronze_bec_ods_stg.MRP_SR_RECEIPT_ORG (
+  SR_RECEIPT_ID,
+  SOURCING_RULE_ID,
+  RECEIPT_ORGANIZATION_ID,
+  EFFECTIVE_DATE,
+  DISABLE_DATE,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  CREATION_DATE,
+  CREATED_BY,
+  ATTRIBUTE_CATEGORY,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  LAST_UPDATE_LOGIN,
+  REQUEST_ID,
+  PROGRAM_APPLICATION_ID,
+  PROGRAM_ID,
+  PROGRAM_UPDATE_DATE,
+  KCA_OPERATION,
+  kca_seq_id,
+  KCA_SEQ_DATE
+)
+(
+  SELECT
+    SR_RECEIPT_ID,
+    SOURCING_RULE_ID,
+    RECEIPT_ORGANIZATION_ID,
+    EFFECTIVE_DATE,
+    DISABLE_DATE,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    CREATION_DATE,
+    CREATED_BY,
+    ATTRIBUTE_CATEGORY,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    LAST_UPDATE_LOGIN,
+    REQUEST_ID,
+    PROGRAM_APPLICATION_ID,
+    PROGRAM_ID,
+    PROGRAM_UPDATE_DATE,
+    KCA_OPERATION,
+    kca_seq_id,
+    KCA_SEQ_DATE
+  FROM bec_raw_dl_ext.MRP_SR_RECEIPT_ORG
+  WHERE
+    kca_operation <> 'DELETE'
+    AND COALESCE(kca_seq_id, '') <> ''
+    AND (COALESCE(SR_RECEIPT_ID, 0), kca_seq_id) IN (
+      SELECT
+        COALESCE(SR_RECEIPT_ID, 0) AS SR_RECEIPT_ID,
+        MAX(kca_seq_id)
+      FROM bec_raw_dl_ext.MRP_SR_RECEIPT_ORG
+      WHERE
+        kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') <> ''
+      GROUP BY
+        COALESCE(SR_RECEIPT_ID, 0)
+    )
+    AND (
+      KCA_SEQ_DATE > (
+        SELECT
+          (
+            executebegints - prune_days
+          )
+        FROM bec_etl_ctrl.batch_ods_info
+        WHERE
+          ods_table_name = 'mrp_sr_receipt_org'
+      )
+    )
+);

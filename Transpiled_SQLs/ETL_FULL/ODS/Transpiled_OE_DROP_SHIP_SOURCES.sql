@@ -1,0 +1,73 @@
+DROP TABLE IF EXISTS silver_bec_ods.OE_DROP_SHIP_SOURCES;
+CREATE TABLE IF NOT EXISTS silver_bec_ods.OE_DROP_SHIP_SOURCES (
+  drop_ship_source_id DECIMAL(15, 0),
+  header_id DECIMAL(15, 0),
+  line_id DECIMAL(15, 0),
+  creation_date TIMESTAMP,
+  created_by DECIMAL(15, 0),
+  last_update_date TIMESTAMP,
+  last_updated_by DECIMAL(15, 0),
+  last_update_login DECIMAL(15, 0),
+  org_id DECIMAL(15, 0),
+  destination_organization_id DECIMAL(15, 0),
+  requisition_header_id DECIMAL(15, 0),
+  requisition_line_id DECIMAL(15, 0),
+  po_header_id DECIMAL(15, 0),
+  po_line_id DECIMAL(15, 0),
+  line_location_id DECIMAL(15, 0),
+  po_release_id DECIMAL(15, 0),
+  inst_id DECIMAL(15, 0),
+  KCA_OPERATION STRING,
+  IS_DELETED_FLG STRING,
+  kca_seq_id DECIMAL(36, 0),
+  kca_seq_date TIMESTAMP
+);
+INSERT INTO silver_bec_ods.OE_DROP_SHIP_SOURCES (
+  drop_ship_source_id,
+  header_id,
+  line_id,
+  creation_date,
+  created_by,
+  last_update_date,
+  last_updated_by,
+  last_update_login,
+  org_id,
+  destination_organization_id,
+  requisition_header_id,
+  requisition_line_id,
+  po_header_id,
+  po_line_id,
+  line_location_id,
+  po_release_id,
+  inst_id,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  kca_seq_id,
+  kca_seq_date
+)
+SELECT
+  drop_ship_source_id,
+  header_id,
+  line_id,
+  creation_date,
+  created_by,
+  last_update_date,
+  last_updated_by,
+  last_update_login,
+  org_id,
+  destination_organization_id,
+  requisition_header_id,
+  requisition_line_id,
+  po_header_id,
+  po_line_id,
+  line_location_id,
+  po_release_id,
+  inst_id,
+  KCA_OPERATION,
+  'N' AS IS_DELETED_FLG,
+  CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+  kca_seq_date
+FROM bronze_bec_ods_stg.OE_DROP_SHIP_SOURCES;
+UPDATE bec_etl_ctrl.batch_ods_info SET load_type = 'I', last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'oe_drop_ship_sources';

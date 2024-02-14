@@ -1,0 +1,99 @@
+TRUNCATE table bronze_bec_ods_stg.RA_RULES;
+INSERT INTO bronze_bec_ods_stg.RA_RULES (
+  RULE_ID,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  CREATION_DATE,
+  CREATED_BY,
+  LAST_UPDATE_LOGIN,
+  NAME,
+  TYPE,
+  STATUS,
+  FREQUENCY,
+  OCCURRENCES,
+  DESCRIPTION,
+  ATTRIBUTE_CATEGORY,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  DEFERRED_REVENUE_FLAG,
+  ZD_EDITION_NAME,
+  ZD_SYNC,
+  KCA_OPERATION,
+  KCA_SEQ_ID,
+  KCA_SEQ_DATE
+)
+(
+  SELECT
+    RULE_ID,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_LOGIN,
+    NAME,
+    TYPE,
+    STATUS,
+    FREQUENCY,
+    OCCURRENCES,
+    DESCRIPTION,
+    ATTRIBUTE_CATEGORY,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    DEFERRED_REVENUE_FLAG,
+    ZD_EDITION_NAME,
+    ZD_SYNC,
+    KCA_OPERATION,
+    KCA_SEQ_ID,
+    KCA_SEQ_DATE
+  FROM bec_raw_dl_ext.RA_RULES
+  WHERE
+    kca_operation <> 'DELETE'
+    AND COALESCE(kca_seq_id, '') <> ''
+    AND (RULE_ID, kca_seq_id) IN (
+      SELECT
+        RULE_ID,
+        MAX(kca_seq_id)
+      FROM bec_raw_dl_ext.RA_RULES
+      WHERE
+        kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') <> ''
+      GROUP BY
+        RULE_ID
+    )
+    AND (
+      KCA_SEQ_DATE > (
+        SELECT
+          (
+            executebegints - prune_days
+          )
+        FROM bec_etl_ctrl.batch_ods_info
+        WHERE
+          ods_table_name = 'ra_rules'
+      )
+    )
+);

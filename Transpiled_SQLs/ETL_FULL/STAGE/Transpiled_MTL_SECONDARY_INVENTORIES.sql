@@ -1,0 +1,19 @@
+DROP table IF EXISTS bronze_bec_ods_stg.MTL_SECONDARY_INVENTORIES;
+CREATE TABLE bronze_bec_ods_stg.MTL_SECONDARY_INVENTORIES AS
+SELECT
+  *
+FROM bec_raw_dl_ext.MTL_SECONDARY_INVENTORIES
+WHERE
+  kca_operation <> 'DELETE'
+  AND (SECONDARY_INVENTORY_NAME, ORGANIZATION_ID, last_update_date) IN (
+    SELECT
+      SECONDARY_INVENTORY_NAME,
+      ORGANIZATION_ID,
+      MAX(last_update_date)
+    FROM bec_raw_dl_ext.MTL_SECONDARY_INVENTORIES
+    WHERE
+      kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') = ''
+    GROUP BY
+      SECONDARY_INVENTORY_NAME,
+      ORGANIZATION_ID
+  );

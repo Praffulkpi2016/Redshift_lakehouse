@@ -1,0 +1,7 @@
+DROP table IF EXISTS bronze_bec_ods_stg.FND_PROFILE_OPTION_VALUES;
+CREATE TABLE bronze_bec_ods_stg.FND_PROFILE_OPTION_VALUES AS
+SELECT
+  *
+FROM bec_raw_dl_ext.FND_PROFILE_OPTION_VALUES
+WHERE
+  kca_operation <> 'DELETE';

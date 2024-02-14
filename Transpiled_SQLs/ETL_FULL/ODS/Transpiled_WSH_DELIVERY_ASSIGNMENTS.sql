@@ -1,0 +1,70 @@
+DROP TABLE IF EXISTS silver_bec_ods.WSH_DELIVERY_ASSIGNMENTS;
+CREATE TABLE IF NOT EXISTS silver_bec_ods.WSH_DELIVERY_ASSIGNMENTS (
+  delivery_assignment_id DECIMAL(15, 0),
+  delivery_id DECIMAL(15, 0),
+  parent_delivery_id DECIMAL(15, 0),
+  delivery_detail_id DECIMAL(15, 0),
+  parent_delivery_detail_id DECIMAL(15, 0),
+  creation_date TIMESTAMP,
+  created_by DECIMAL(15, 0),
+  last_update_date TIMESTAMP,
+  last_updated_by DECIMAL(15, 0),
+  last_update_login DECIMAL(15, 0),
+  program_application_id DECIMAL(15, 0),
+  program_id DECIMAL(15, 0),
+  program_update_date TIMESTAMP,
+  request_id DECIMAL(15, 0),
+  active_flag STRING,
+  `type` STRING,
+  KCA_OPERATION STRING,
+  IS_DELETED_FLG STRING,
+  kca_seq_id DECIMAL(36, 0),
+  kca_seq_date TIMESTAMP
+);
+INSERT INTO silver_bec_ods.WSH_DELIVERY_ASSIGNMENTS (
+  delivery_assignment_id,
+  delivery_id,
+  parent_delivery_id,
+  delivery_detail_id,
+  parent_delivery_detail_id,
+  creation_date,
+  created_by,
+  last_update_date,
+  last_updated_by,
+  last_update_login,
+  program_application_id,
+  program_id,
+  program_update_date,
+  request_id,
+  active_flag,
+  `type`,
+  kca_operation,
+  IS_DELETED_FLG,
+  kca_seq_id,
+  kca_seq_date
+)
+SELECT
+  delivery_assignment_id,
+  delivery_id,
+  parent_delivery_id,
+  delivery_detail_id,
+  parent_delivery_detail_id,
+  creation_date,
+  created_by,
+  last_update_date,
+  last_updated_by,
+  last_update_login,
+  program_application_id,
+  program_id,
+  program_update_date,
+  request_id,
+  active_flag,
+  `type`,
+  KCA_OPERATION,
+  'N' AS IS_DELETED_FLG,
+  CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+  kca_seq_date
+FROM bronze_bec_ods_stg.WSH_DELIVERY_ASSIGNMENTS;
+UPDATE bec_etl_ctrl.batch_ods_info SET load_type = 'I', last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'wsh_delivery_assignments';

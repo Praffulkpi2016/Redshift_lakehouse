@@ -4,18 +4,18 @@ from sqlglot import exp, parse_one,parse
 
 # COMMAND ----------
 
-dbutils.widgets.text("batch_name","")
-batchname = dbutils.widgets.get("batch_name")
-dbutils.widgets.dropdown(choices=['Y','N'], name="Transpile_sqls_flag",defaultValue="N")
-transpile_flag = dbutils.widgets.get("Transpile_sqls_flag")
-dbutils.widgets.text('catalog','')
-catalog = dbutils.widgets.get('catalog')
-dbutils.widgets.text('existing_cluster_id','')
-existing_cluster_id = dbutils.widgets.get('existing_cluster_id')
+# dbutils.widgets.text("batch_name","")
+# batchname = dbutils.widgets.get("batch_name")
+# dbutils.widgets.dropdown(choices=['Y','N'], name="Transpile_sqls_flag",defaultValue="N")
+# transpile_flag = dbutils.widgets.get("Transpile_sqls_flag")
+# dbutils.widgets.text('catalog','')
+# catalog = dbutils.widgets.get('catalog')
+# dbutils.widgets.text('existing_cluster_id','')
+# existing_cluster_id = dbutils.widgets.get('existing_cluster_id')
 
 # COMMAND ----------
 
-confg_db = spark.sql("select * from redshift_lakehouse.bec_etl_ctrl.dbk_confg_info")
+confg_db = spark.sql(f"select * from redshift_lakehouse.bec_etl_ctrl.dbk_confg_info")
 catalog = confg_db.filter(" config_key = 'catalog' ").select("config_value").collect()[0].config_value
 transpile_flag = confg_db.filter(" config_key = 'transpile_sqls' ").select("config_value").collect()[0].config_value
 dbk_url = confg_db.filter(" config_key = 'dbk_url' ").select("config_value").collect()[0].config_value
@@ -25,6 +25,11 @@ api_pat_skey = confg_db.filter(" config_key = 'api_pat_skey' ").select("config_v
 stg_sch_name = confg_db.filter(" config_key = 'stg_sch_name' ").select("config_value").collect()[0].config_value
 ods_sch_name = confg_db.filter(" config_key = 'ods_sch_name' ").select("config_value").collect()[0].config_value
 analy_sch_name = confg_db.filter(" config_key = 'analy_sch_name' ").select("config_value").collect()[0].config_value
+nb_path = dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().getOrElse(None)
+redshift_sqls_path = confg_db.filter(" config_key = 'redshift_sqls_path' ").select("config_value").collect()[0].config_value
+transpiled_sqls_path = confg_db.filter(" config_key = 'transpiled_sqls_path' ").select("config_value").collect()[0].config_value
+main_sql_exec_path = confg_db.filter(" config_key = 'main_sql_exec_path' ").select("config_value").collect()[0].config_value
+bridge_tasks_path = confg_db.filter(" config_key = 'bridge_tasks_path' ").select("config_value").collect()[0].config_value
 
 api_pat = dbutils.secrets.get(scope='redshift', key=api_pat_skey)
 
@@ -87,13 +92,13 @@ if transpile_flag == 'Y':
             print(os.path.basename(input_file_path), '\n', '#######', str(e))
 
     #--Transpiling the SQLs
-    base_path = '/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Redshift Code/**/*.sql'
+    base_path = redshift_sqls_path+'/**/*.sql'
     # base_path = '/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Redshift Code/ETL_FULL/ODS/**.sql'
     # base_path = '/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Redshift Code/ETL_FULL/ANALYTICS/**.sql'
     original_subdirectory_paths=glob.glob(base_path, recursive=True)
     for path in original_subdirectory_paths:
         input_file_path=path
-        abs_target_path='Transpiled Code'.join(path.partition('Redshift Code')[0::2])
+        abs_target_path=input_file_path.replace(redshift_sqls_path,transpiled_sqls_path)
         transpiled_file_name='Transpiled_'+abs_target_path.split('/')[-1]
         output_file_path='/'.join(abs_target_path.split('/')[:-1])+'/'
         if not os.path.exists(os.path.dirname(output_file_path)):
@@ -107,22 +112,6 @@ if transpile_flag == 'Y':
 
 # COMMAND ----------
 
-# variable_list = spark.sql("SELECT * FROM hv_etl_ctrl.batch_variable_info order by seq_num ").collect()
-
-# Bucket_Name = variable_list[0][2]
-# unload_bucket_path = variable_list[1][2]
-# stage_schema_name = variable_list[2][2]
-# ods_schema_name = variable_list[3][2]
-# analytics_schema_name = variable_list[4][2]
-# etl_script_folder_path = variable_list[5][2]
-# l4_ebs = variable_list[6][2]
-# ebs_large = variable_list[7][2]
-# ebs_small = variable_list[8][2]
-# sfdc = variable_list[9][2]
-# athena_db = variable_list[10][2]
-# iam_role = variable_list[11][2]
-# unload_table_prefix = variable_list[12][2]
-
 ods_table_list = ''
 dim_table_dict = {}
 fact_table_dict = {}
@@ -131,26 +120,8 @@ rt_table_dict = {}
 batchname_li = batchname.split(',')
 batchname_w_p = tuple(batchname_li) if len(batchname_li) >1 else f"('{batchname_li[0]}')"
 
-# records = spark.sql(f"select ods_table_name from {catalog}.kca_etl_ctrl.batch_ods_info where refresh_frequency = 'Daily' and batch_name in {batchname_w_p}").collect()
-# files_list = glob.glob(r"/Workspace/Repos/shailesh.r@kpipartners.com/Redshift_Databricks_repo/ETL_SCRIPTS/Transpiled Code/ETL_FULL/ODS/*.sql", recursive=True)
-# for o_table in records:
-#     ods_table_list = ods_table_list + o_table[0] + ','
-# print (f"{ods_table_list=}")
-
-# analytics_records = spark.sql(f"select dw_table_name,batch_priority from {catalog}.kca_etl_ctrl.batch_dw_info where refresh_frequency = 'Daily' and batch_name in {batchname_w_p}").collect()
-# for a_table in analytics_records:
-#     if a_table[0].startswith('dim_'):
-#         dim_table_dict.update({a_table[0]: a_table[1]})
-#     elif a_table[0].startswith('fact_') and not a_table[0].endswith('_rt'):
-#         fact_table_dict.update({a_table[0]: a_table[1]})
-#     elif a_table[0].endswith('_rt'):
-#         rt_table_dict.update({a_table[0]: a_table[1]})
-#     else:
-#         dim_table_dict.update({a_table[0]: a_table[1]})
-
-#for new control table with object level
 records = spark.sql(f"select ods_table_name from {catalog}.bec_etl_ctrl.batch_ods_info where refresh_frequency = 'Daily' and batch_name in {batchname_w_p}").collect()
-files_list = glob.glob(r"/Workspace/Repos/shailesh.r@kpipartners.com/Redshift_Databricks_repo/ETL_SCRIPTS/Transpiled Code/ETL_FULL/ODS/*.sql", recursive=True)
+files_list = glob.glob(transpiled_sqls_path+"/ETL_FULL/ODS/*.sql", recursive=True)
 for o_table in records:
     ods_table_list = ods_table_list + o_table[0] + ','
 print (f"{ods_table_list=}")
@@ -228,12 +199,12 @@ def job_json_builder(task_key,workflow_task,base_params=None,dep_on=None,exst_cl
 
     if workflow_task == 'Main_SQL_executor': 
         json_dict.update({"notebook_task": {
-                    "notebook_path": "/Users/shailesh.r@kpipartners.com/Main_SQL_executor",
+                    "notebook_path": main_sql_exec_path,
                     "source": "WORKSPACE"
                 }})
     elif workflow_task == 'bridge_tasks':
         json_dict.update({"notebook_task": {
-        "notebook_path": "/Users/shailesh.r@kpipartners.com/bridge_tasks",
+        "notebook_path": bridge_tasks_path,
         "source": "WORKSPACE"
     }})
     elif workflow_task == 'run_job_task':

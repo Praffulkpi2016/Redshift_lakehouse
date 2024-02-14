@@ -1,0 +1,7 @@
+DROP table IF EXISTS bronze_bec_ods_stg.XXBEC_INVENTORY_VALUE_RPT;
+CREATE TABLE bronze_bec_ods_stg.XXBEC_INVENTORY_VALUE_RPT AS
+SELECT
+  *
+FROM bec_raw_dl_ext.XXBEC_INVENTORY_VALUE_RPT
+WHERE
+  kca_operation <> 'DELETE';

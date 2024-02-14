@@ -1,0 +1,175 @@
+/* Delete Records */
+DELETE FROM silver_bec_ods.mtl_categories_b
+WHERE
+  CATEGORY_ID IN (
+    SELECT
+      stg.CATEGORY_ID
+    FROM silver_bec_ods.mtl_categories_b AS ods, bronze_bec_ods_stg.mtl_categories_b AS stg
+    WHERE
+      ods.CATEGORY_ID = stg.CATEGORY_ID AND stg.kca_operation IN ('INSERT', 'UPDATE')
+  );
+/* Insert records */
+INSERT INTO silver_bec_ods.mtl_categories_b (
+  CATEGORY_ID,
+  STRUCTURE_ID,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  CREATION_DATE,
+  CREATED_BY,
+  LAST_UPDATE_LOGIN,
+  DESCRIPTION,
+  DISABLE_DATE,
+  SEGMENT1,
+  SEGMENT2,
+  SEGMENT3,
+  SEGMENT4,
+  SEGMENT5,
+  SEGMENT6,
+  SEGMENT7,
+  SEGMENT8,
+  SEGMENT9,
+  SEGMENT10,
+  SEGMENT11,
+  SEGMENT12,
+  SEGMENT13,
+  SEGMENT14,
+  SEGMENT15,
+  SEGMENT16,
+  SEGMENT17,
+  SEGMENT18,
+  SEGMENT19,
+  SEGMENT20,
+  SUMMARY_FLAG,
+  ENABLED_FLAG,
+  START_DATE_ACTIVE,
+  END_DATE_ACTIVE,
+  ATTRIBUTE_CATEGORY,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  REQUEST_ID,
+  PROGRAM_APPLICATION_ID,
+  PROGRAM_ID,
+  PROGRAM_UPDATE_DATE,
+  WEB_STATUS,
+  SUPPLIER_ENABLED_FLAG,
+  ZD_EDITION_NAME,
+  ZD_SYNC,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  KCA_SEQ_ID,
+  kca_seq_date
+)
+(
+  SELECT
+    CATEGORY_ID,
+    STRUCTURE_ID,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_LOGIN,
+    DESCRIPTION,
+    DISABLE_DATE,
+    SEGMENT1,
+    SEGMENT2,
+    SEGMENT3,
+    SEGMENT4,
+    SEGMENT5,
+    SEGMENT6,
+    SEGMENT7,
+    SEGMENT8,
+    SEGMENT9,
+    SEGMENT10,
+    SEGMENT11,
+    SEGMENT12,
+    SEGMENT13,
+    SEGMENT14,
+    SEGMENT15,
+    SEGMENT16,
+    SEGMENT17,
+    SEGMENT18,
+    SEGMENT19,
+    SEGMENT20,
+    SUMMARY_FLAG,
+    ENABLED_FLAG,
+    START_DATE_ACTIVE,
+    END_DATE_ACTIVE,
+    ATTRIBUTE_CATEGORY,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    REQUEST_ID,
+    PROGRAM_APPLICATION_ID,
+    PROGRAM_ID,
+    PROGRAM_UPDATE_DATE,
+    WEB_STATUS, /* TOTAL_PROD_ID, */
+    SUPPLIER_ENABLED_FLAG,
+    ZD_EDITION_NAME,
+    ZD_SYNC,
+    KCA_OPERATION,
+    'N' AS IS_DELETED_FLG,
+    CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+    kca_seq_date
+  FROM bronze_bec_ods_stg.mtl_categories_b
+  WHERE
+    kca_operation IN ('INSERT', 'UPDATE')
+    AND (CATEGORY_ID, kca_seq_id) IN (
+      SELECT
+        CATEGORY_ID,
+        MAX(kca_seq_id)
+      FROM bronze_bec_ods_stg.mtl_categories_b
+      WHERE
+        kca_operation IN ('INSERT', 'UPDATE')
+      GROUP BY
+        CATEGORY_ID
+    )
+);
+/* Soft delete */
+UPDATE silver_bec_ods.mtl_categories_b SET IS_DELETED_FLG = 'N';
+UPDATE silver_bec_ods.mtl_categories_b SET IS_DELETED_FLG = 'Y'
+WHERE
+  (
+    CATEGORY_ID
+  ) IN (
+    SELECT
+      CATEGORY_ID
+    FROM bec_raw_dl_ext.mtl_categories_b
+    WHERE
+      (CATEGORY_ID, KCA_SEQ_ID) IN (
+        SELECT
+          CATEGORY_ID,
+          MAX(KCA_SEQ_ID) AS KCA_SEQ_ID
+        FROM bec_raw_dl_ext.mtl_categories_b
+        GROUP BY
+          CATEGORY_ID
+      )
+      AND kca_operation = 'DELETE'
+  );
+UPDATE bec_etl_ctrl.batch_ods_info SET load_type = 'I', last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'mtl_categories_b';

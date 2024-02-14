@@ -1,0 +1,87 @@
+/* Delete Records */
+DELETE FROM silver_bec_ods.HR_ALL_ORGANIZATION_UNITS_TL
+WHERE
+  (ORGANIZATION_ID, LANGUAGE) IN (
+    SELECT
+      stg.ORGANIZATION_ID,
+      stg.LANGUAGE
+    FROM silver_bec_ods.HR_ALL_ORGANIZATION_UNITS_TL AS ods, bronze_bec_ods_stg.HR_ALL_ORGANIZATION_UNITS_TL AS stg
+    WHERE
+      ods.ORGANIZATION_ID = stg.ORGANIZATION_ID
+      AND ods.LANGUAGE = stg.LANGUAGE
+      AND stg.kca_operation IN ('INSERT', 'UPDATE')
+  );
+/* Insert records	*/
+INSERT INTO silver_bec_ods.HR_ALL_ORGANIZATION_UNITS_TL (
+  ORGANIZATION_ID,
+  LANGUAGE,
+  SOURCE_LANG,
+  NAME,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  LAST_UPDATE_LOGIN,
+  CREATED_BY,
+  CREATION_DATE,
+  ZD_EDITION_NAME,
+  ZD_SYNC,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  kca_seq_id,
+  kca_seq_date
+)
+SELECT
+  ORGANIZATION_ID,
+  LANGUAGE,
+  SOURCE_LANG,
+  NAME,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  LAST_UPDATE_LOGIN,
+  CREATED_BY,
+  CREATION_DATE,
+  ZD_EDITION_NAME,
+  ZD_SYNC,
+  KCA_OPERATION,
+  'N' AS IS_DELETED_FLG,
+  CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+  kca_seq_date
+FROM bronze_bec_ods_stg.HR_ALL_ORGANIZATION_UNITS_TL
+WHERE
+  kca_operation IN ('INSERT', 'UPDATE')
+  AND (ORGANIZATION_ID, LANGUAGE, kca_seq_id) IN (
+    SELECT
+      ORGANIZATION_ID,
+      LANGUAGE,
+      MAX(kca_seq_id)
+    FROM bronze_bec_ods_stg.HR_ALL_ORGANIZATION_UNITS_TL
+    WHERE
+      kca_operation IN ('INSERT', 'UPDATE')
+    GROUP BY
+      ORGANIZATION_ID,
+      LANGUAGE
+  );
+/* Soft Delete */
+UPDATE silver_bec_ods.HR_ALL_ORGANIZATION_UNITS_TL SET IS_DELETED_FLG = 'N';
+UPDATE silver_bec_ods.HR_ALL_ORGANIZATION_UNITS_TL SET IS_DELETED_FLG = 'Y'
+WHERE
+  (ORGANIZATION_ID, LANGUAGE) IN (
+    SELECT
+      ORGANIZATION_ID,
+      LANGUAGE
+    FROM bec_raw_dl_ext.HR_ALL_ORGANIZATION_UNITS_TL
+    WHERE
+      (ORGANIZATION_ID, LANGUAGE, KCA_SEQ_ID) IN (
+        SELECT
+          ORGANIZATION_ID,
+          LANGUAGE,
+          MAX(KCA_SEQ_ID) AS KCA_SEQ_ID
+        FROM bec_raw_dl_ext.HR_ALL_ORGANIZATION_UNITS_TL
+        GROUP BY
+          ORGANIZATION_ID,
+          LANGUAGE
+      )
+      AND kca_operation = 'DELETE'
+  );
+UPDATE bec_etl_ctrl.batch_ods_info SET last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'hr_all_organization_units_tl';

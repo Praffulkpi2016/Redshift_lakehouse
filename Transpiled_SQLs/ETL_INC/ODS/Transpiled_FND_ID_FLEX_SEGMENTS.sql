@@ -1,0 +1,139 @@
+/* Delete Records */
+DELETE FROM silver_bec_ods.fnd_id_flex_segments
+WHERE
+  (APPLICATION_ID, ID_FLEX_CODE, ID_FLEX_NUM, APPLICATION_COLUMN_NAME) IN (
+    SELECT
+      stg.APPLICATION_ID,
+      stg.ID_FLEX_CODE,
+      stg.ID_FLEX_NUM,
+      stg.APPLICATION_COLUMN_NAME
+    FROM silver_bec_ods.fnd_id_flex_segments AS ods, bronze_bec_ods_stg.fnd_id_flex_segments AS stg
+    WHERE
+      ods.APPLICATION_ID = stg.APPLICATION_ID
+      AND ods.ID_FLEX_CODE = stg.ID_FLEX_CODE
+      AND ods.ID_FLEX_NUM = stg.ID_FLEX_NUM
+      AND ods.APPLICATION_COLUMN_NAME = stg.APPLICATION_COLUMN_NAME
+      AND stg.kca_operation IN ('INSERT', 'UPDATE')
+  );
+/* Insert records */
+INSERT INTO silver_bec_ods.fnd_id_flex_segments (
+  APPLICATION_ID,
+  ID_FLEX_CODE,
+  ID_FLEX_NUM,
+  APPLICATION_COLUMN_NAME,
+  SEGMENT_NAME,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  CREATION_DATE,
+  CREATED_BY,
+  LAST_UPDATE_LOGIN,
+  SEGMENT_NUM,
+  APPLICATION_COLUMN_INDEX_FLAG,
+  ENABLED_FLAG,
+  REQUIRED_FLAG,
+  DISPLAY_FLAG,
+  DISPLAY_SIZE,
+  SECURITY_ENABLED_FLAG,
+  MAXIMUM_DESCRIPTION_LEN,
+  CONCATENATION_DESCRIPTION_LEN,
+  FLEX_VALUE_SET_ID,
+  RANGE_CODE,
+  DEFAULT_TYPE,
+  DEFAULT_VALUE,
+  RUNTIME_PROPERTY_FUNCTION,
+  ADDITIONAL_WHERE_CLAUSE,
+  SEGMENT_INSERT_FLAG,
+  SEGMENT_UPDATE_FLAG,
+  ZD_EDITION_NAME,
+  ZD_SYNC,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  KCA_SEQ_ID,
+  kca_seq_date
+)
+(
+  SELECT
+    APPLICATION_ID,
+    ID_FLEX_CODE,
+    ID_FLEX_NUM,
+    APPLICATION_COLUMN_NAME,
+    SEGMENT_NAME,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_LOGIN,
+    SEGMENT_NUM,
+    APPLICATION_COLUMN_INDEX_FLAG,
+    ENABLED_FLAG,
+    REQUIRED_FLAG,
+    DISPLAY_FLAG,
+    DISPLAY_SIZE,
+    SECURITY_ENABLED_FLAG,
+    MAXIMUM_DESCRIPTION_LEN,
+    CONCATENATION_DESCRIPTION_LEN,
+    FLEX_VALUE_SET_ID,
+    RANGE_CODE,
+    DEFAULT_TYPE,
+    DEFAULT_VALUE,
+    RUNTIME_PROPERTY_FUNCTION,
+    ADDITIONAL_WHERE_CLAUSE,
+    SEGMENT_INSERT_FLAG,
+    SEGMENT_UPDATE_FLAG,
+    ZD_EDITION_NAME,
+    ZD_SYNC,
+    KCA_OPERATION,
+    'N' AS IS_DELETED_FLG,
+    CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+    kca_seq_date
+  FROM bronze_bec_ods_stg.fnd_id_flex_segments
+  WHERE
+    kca_operation IN ('INSERT', 'UPDATE')
+    AND (APPLICATION_ID, ID_FLEX_CODE, ID_FLEX_NUM, APPLICATION_COLUMN_NAME, kca_seq_id) IN (
+      SELECT
+        APPLICATION_ID,
+        ID_FLEX_CODE,
+        ID_FLEX_NUM,
+        APPLICATION_COLUMN_NAME,
+        MAX(kca_seq_id)
+      FROM bronze_bec_ods_stg.fnd_id_flex_segments
+      WHERE
+        kca_operation IN ('INSERT', 'UPDATE')
+      GROUP BY
+        APPLICATION_ID,
+        ID_FLEX_CODE,
+        ID_FLEX_NUM,
+        APPLICATION_COLUMN_NAME
+    )
+);
+/* Soft Delete */
+UPDATE silver_bec_ods.fnd_id_flex_segments SET IS_DELETED_FLG = 'N';
+UPDATE silver_bec_ods.fnd_id_flex_segments SET IS_DELETED_FLG = 'Y'
+WHERE
+  (APPLICATION_ID, ID_FLEX_CODE, ID_FLEX_NUM, APPLICATION_COLUMN_NAME) IN (
+    SELECT
+      APPLICATION_ID,
+      ID_FLEX_CODE,
+      ID_FLEX_NUM,
+      APPLICATION_COLUMN_NAME
+    FROM bec_raw_dl_ext.fnd_id_flex_segments
+    WHERE
+      (APPLICATION_ID, ID_FLEX_CODE, ID_FLEX_NUM, APPLICATION_COLUMN_NAME, KCA_SEQ_ID) IN (
+        SELECT
+          APPLICATION_ID,
+          ID_FLEX_CODE,
+          ID_FLEX_NUM,
+          APPLICATION_COLUMN_NAME,
+          MAX(KCA_SEQ_ID) AS KCA_SEQ_ID
+        FROM bec_raw_dl_ext.fnd_id_flex_segments
+        GROUP BY
+          APPLICATION_ID,
+          ID_FLEX_CODE,
+          ID_FLEX_NUM,
+          APPLICATION_COLUMN_NAME
+      )
+      AND kca_operation = 'DELETE'
+  );
+UPDATE bec_etl_ctrl.batch_ods_info SET last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'fnd_id_flex_segments';

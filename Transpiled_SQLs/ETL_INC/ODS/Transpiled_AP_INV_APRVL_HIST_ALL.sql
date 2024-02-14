@@ -1,0 +1,110 @@
+/* Delete Records */
+DELETE FROM silver_bec_ods.AP_INV_APRVL_HIST_ALL
+WHERE
+  (
+    COALESCE(APPROVAL_HISTORY_ID, '0')
+  ) IN (
+    SELECT
+      COALESCE(stg.APPROVAL_HISTORY_ID, '0') AS APPROVAL_HISTORY_ID
+    FROM silver_bec_ods.AP_INV_APRVL_HIST_ALL AS ods, bronze_bec_ods_stg.AP_INV_APRVL_HIST_ALL AS stg
+    WHERE
+      COALESCE(ods.APPROVAL_HISTORY_ID, '0') = COALESCE(stg.APPROVAL_HISTORY_ID, '0')
+      AND stg.kca_operation IN ('INSERT', 'UPDATE')
+  );
+/* Insert records */
+INSERT INTO silver_bec_ods.AP_INV_APRVL_HIST_ALL (
+  APPROVAL_HISTORY_ID,
+  INVOICE_ID,
+  ITERATION,
+  RESPONSE,
+  APPROVER_ID,
+  APPROVER_NAME,
+  AMOUNT_APPROVED,
+  APPROVER_COMMENTS,
+  CREATED_BY,
+  CREATION_DATE,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  LAST_UPDATE_LOGIN,
+  ORG_ID,
+  NOTIFICATION_ORDER,
+  ORIG_SYSTEM,
+  ITEM_CLASS,
+  ITEM_ID,
+  LINE_NUMBER,
+  HOLD_ID,
+  HISTORY_TYPE,
+  `APPROVER_COMMENTS#1`,
+  `LINE_NUMBER#1`,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  kca_seq_id,
+  kca_seq_date
+)
+(
+  SELECT
+    APPROVAL_HISTORY_ID,
+    INVOICE_ID,
+    ITERATION,
+    RESPONSE,
+    APPROVER_ID,
+    APPROVER_NAME,
+    AMOUNT_APPROVED,
+    APPROVER_COMMENTS,
+    CREATED_BY,
+    CREATION_DATE,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    LAST_UPDATE_LOGIN,
+    ORG_ID,
+    NOTIFICATION_ORDER,
+    ORIG_SYSTEM,
+    ITEM_CLASS,
+    ITEM_ID,
+    LINE_NUMBER,
+    HOLD_ID,
+    HISTORY_TYPE,
+    `APPROVER_COMMENTS#1`,
+    `LINE_NUMBER#1`,
+    KCA_OPERATION,
+    'N' AS IS_DELETED_FLG,
+    CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+    kca_seq_date
+  FROM bronze_bec_ods_stg.AP_INV_APRVL_HIST_ALL
+  WHERE
+    kca_operation IN ('INSERT', 'UPDATE')
+    AND (COALESCE(APPROVAL_HISTORY_ID, '0'), kca_seq_id) IN (
+      SELECT
+        COALESCE(APPROVAL_HISTORY_ID, '0') AS APPROVAL_HISTORY_ID,
+        MAX(kca_seq_id)
+      FROM bronze_bec_ods_stg.AP_INV_APRVL_HIST_ALL
+      WHERE
+        kca_operation IN ('INSERT', 'UPDATE')
+      GROUP BY
+        COALESCE(APPROVAL_HISTORY_ID, '0')
+    )
+);
+/* Soft delete */
+UPDATE silver_bec_ods.AP_INV_APRVL_HIST_ALL SET IS_DELETED_FLG = 'N';
+UPDATE silver_bec_ods.AP_INV_APRVL_HIST_ALL SET IS_DELETED_FLG = 'Y'
+WHERE
+  (
+    APPROVAL_HISTORY_ID
+  ) IN (
+    SELECT
+      APPROVAL_HISTORY_ID
+    FROM bec_raw_dl_ext.AP_INV_APRVL_HIST_ALL
+    WHERE
+      (APPROVAL_HISTORY_ID, KCA_SEQ_ID) IN (
+        SELECT
+          APPROVAL_HISTORY_ID,
+          MAX(KCA_SEQ_ID) AS KCA_SEQ_ID
+        FROM bec_raw_dl_ext.AP_INV_APRVL_HIST_ALL
+        GROUP BY
+          APPROVAL_HISTORY_ID
+      )
+      AND kca_operation = 'DELETE'
+  );
+UPDATE bec_etl_ctrl.batch_ods_info SET last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'ap_inv_aprvl_hist_all';

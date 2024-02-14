@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.GL_CODE_COMBINATIONS_KFV;
+CREATE TABLE bronze_bec_ods_stg.GL_CODE_COMBINATIONS_KFV AS
+SELECT
+  *
+FROM bec_raw_dl_ext.GL_CODE_COMBINATIONS_KFV
+WHERE
+  kca_operation <> 'DELETE';

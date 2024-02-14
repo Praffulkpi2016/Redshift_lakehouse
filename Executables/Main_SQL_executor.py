@@ -17,26 +17,10 @@ layer = dbutils.widgets.get('layer')
 
 # COMMAND ----------
 
-variable_list = spark.sql(f"SELECT * FROM {catalog}.bec_etl_ctrl.batch_variable_info order by seq_num").collect()
-
-Bucket_Name = variable_list[0][2]
-unload_bucket_path = variable_list[1][2]
-stage_schema_name = variable_list[2][2]
-ods_schema_name = variable_list[3][2]
-analytics_schema_name = variable_list[4][2]
-etl_script_folder_path = variable_list[5][2]
-l4_ebs = variable_list[6][2]
-ebs_large = variable_list[7][2]
-ebs_small = variable_list[8][2]
-sfdc = variable_list[9][2]
-athena_db = variable_list[10][2]
-iam_role = variable_list[11][2]
-unload_table_prefix = variable_list[12][2]
-
-# COMMAND ----------
-
-
-tables_list
+confg_db = spark.sql("select * from redshift_lakehouse.bec_etl_ctrl.dbk_confg_info")
+catalog = confg_db.filter(" config_key = 'catalog' ").select("config_value").collect()[0].config_value
+redshift_sqls_path = confg_db.filter(" config_key = 'redshift_sqls_path' ").select("config_value").collect()[0].config_value
+transpiled_sqls_path = confg_db.filter(" config_key = 'transpiled_sqls_path' ").select("config_value").collect()[0].config_value
 
 # COMMAND ----------
 
@@ -45,8 +29,6 @@ batch_ods_info = spark.sql(f"select * from bec_etl_ctrl.batch_ods_info")
 batch_dw_info = spark.sql(f"select * from bec_etl_ctrl.batch_dw_info")
 
 # COMMAND ----------
-
-# add_column_layer_map = {'ods':'bec_ods_stg','analytics':''}
 
 def create_schemas(sql):
     schema_set = set()
@@ -86,8 +68,8 @@ def execute_sql(sql_file,file_name,layer,altered_sql=None):
 
 spark.sql(f"use catalog {catalog}")
 if layer == 'stage':
-    full_load_path = "/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Transpiled Code/ETL_FULL/STAGE"
-    inc_load_path = "/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Transpiled Code/ETL_INC/STAGE"
+    full_load_path = transpiled_sqls_path+"/ETL_FULL/STAGE"
+    inc_load_path = transpiled_sqls_path+"/ETL_INC/STAGE"
     full_files_list = glob.glob(f"{full_load_path}/*.sql", recursive=True)
     inc_files_list = glob.glob(f"{inc_load_path}/*.sql", recursive=True)
     for each_table in tables_list:
@@ -110,8 +92,8 @@ if layer == 'stage':
                 else: print(f'{layer} incremental sql not available for {each_table}')
         else: print(f"Skipping Execution of {each_table} due to {disable_flag=} ")
 elif layer == 'ods':
-    full_load_path = "/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Transpiled Code/ETL_FULL/ODS"
-    inc_load_path = "/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Transpiled Code/ETL_INC/ODS"
+    full_load_path = transpiled_sqls_path+"/ETL_FULL/ODS"
+    inc_load_path = transpiled_sqls_path+"/ETL_INC/ODS"
     full_files_list = glob.glob(f"{full_load_path}/*.sql", recursive=True)
     inc_files_list = glob.glob(f"{inc_load_path}/*.sql", recursive=True)
     for each_table in tables_list:
@@ -134,8 +116,8 @@ elif layer == 'ods':
                 else: print(f'{layer} incremental sql not available for {each_table}')
         else: print(f"Skipping Execution of {each_table} due to {disable_flag=} ")
 elif layer == 'analytics':
-    full_load_path = "/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Transpiled Code/ETL_FULL/ANALYTICS"
-    inc_load_path = "/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Transpiled Code/ETL_INC/ANALYTICS"
+    full_load_path = transpiled_sqls_path+"/ETL_FULL/ANALYTICS"
+    inc_load_path = transpiled_sqls_path+"/ETL_INC/ANALYTICS"
     full_files_list = glob.glob(f"{full_load_path}/*.sql", recursive=True)
     inc_files_list = glob.glob(f"{inc_load_path}/*.sql", recursive=True)
     for each_table in tables_list:
@@ -157,28 +139,28 @@ elif layer == 'analytics':
                         break
                 else: print(f'{layer} incremental sql not available for {each_table}')
         else: print(f"Skipping Execution of {each_table} due to {disable_flag=} ")
-elif layer == 'rds':
-    full_load_path = "/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Transpiled Code/ETL_FULL/RDS"
-    inc_load_path = "/Workspace/Users/shailesh.r@kpipartners.com/ETL_SCRIPTS/Transpiled Code/ETL_INC/RDS"
-    full_files_list = glob.glob(f"{full_load_path}/*.sql", recursive=True)
-    inc_files_list = glob.glob(f"{inc_load_path}/*.sql", recursive=True)
-    for each_table in tables_list:
-        disable_flag = batch_ods_info.filter(f"ods_table_name = '{each_table}' ").select('disable_flag').collect()[0].disable_flag
-        if not disable_flag:
-            load_type = batch_ods_info.filter(f"ods_table_name = '{each_table}' ").select('load_type').collect()[0].load_type
-            if load_type == 'F':
-                for each_file in full_files_list:
-                    if each_table == os.path.basename(each_file).replace(".sql","").replace("Transpiled_","").lower():
-                        print(f'Table={each_table}, {load_type=}')
-                        execute_sql(each_file,each_table,layer)
-                        break
-                else: print(f'{layer} full sql not available for {each_table}')
-            elif load_type == 'I':
-                for each_file in inc_files_list:
-                    if each_table == os.path.basename(each_file).replace(".sql","").replace("Transpiled_","").lower():
-                        print(f'Table={each_table}, {load_type=}')
-                        execute_sql(each_file,each_table,layer)
-                        break
-                else: print(f'{layer} incremental sql not available for {each_table}')
-        else: print(f"Skipping Execution of {each_table} due to {disable_flag=} ")
+# elif layer == 'rds':
+#     full_load_path = transpiled_sqls_path+"/ETL_FULL/RDS"
+#     inc_load_path = transpiled_sqls_path+"/ETL_INC/RDS"
+#     full_files_list = glob.glob(f"{full_load_path}/*.sql", recursive=True)
+#     inc_files_list = glob.glob(f"{inc_load_path}/*.sql", recursive=True)
+#     for each_table in tables_list:
+#         disable_flag = batch_ods_info.filter(f"ods_table_name = '{each_table}' ").select('disable_flag').collect()[0].disable_flag
+#         if not disable_flag:
+#             load_type = batch_ods_info.filter(f"ods_table_name = '{each_table}' ").select('load_type').collect()[0].load_type
+#             if load_type == 'F':
+#                 for each_file in full_files_list:
+#                     if each_table == os.path.basename(each_file).replace(".sql","").replace("Transpiled_","").lower():
+#                         print(f'Table={each_table}, {load_type=}')
+#                         execute_sql(each_file,each_table,layer)
+#                         break
+#                 else: print(f'{layer} full sql not available for {each_table}')
+#             elif load_type == 'I':
+#                 for each_file in inc_files_list:
+#                     if each_table == os.path.basename(each_file).replace(".sql","").replace("Transpiled_","").lower():
+#                         print(f'Table={each_table}, {load_type=}')
+#                         execute_sql(each_file,each_table,layer)
+#                         break
+#                 else: print(f'{layer} incremental sql not available for {each_table}')
+#         else: print(f"Skipping Execution of {each_table} due to {disable_flag=} ")
             

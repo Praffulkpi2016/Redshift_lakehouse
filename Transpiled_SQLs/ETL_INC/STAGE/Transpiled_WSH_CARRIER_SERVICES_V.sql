@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.WSH_CARRIER_SERVICES_V;
+CREATE TABLE bronze_bec_ods_stg.WSH_CARRIER_SERVICES_V AS
+SELECT
+  *
+FROM bec_raw_dl_ext.WSH_CARRIER_SERVICES_V
+WHERE
+  kca_operation <> 'DELETE';

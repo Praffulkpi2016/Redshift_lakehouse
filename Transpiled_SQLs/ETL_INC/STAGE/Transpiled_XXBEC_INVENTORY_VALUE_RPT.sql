@@ -1,0 +1,7 @@
+TRUNCATE table bronze_bec_ods_stg.XXBEC_INVENTORY_VALUE_RPT;
+INSERT INTO bronze_bec_ods_stg.XXBEC_INVENTORY_VALUE_RPT
+SELECT
+  *
+FROM bec_raw_dl_ext.XXBEC_INVENTORY_VALUE_RPT
+WHERE
+  kca_operation <> 'DELETE';

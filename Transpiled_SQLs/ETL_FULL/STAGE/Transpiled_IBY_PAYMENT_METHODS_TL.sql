@@ -1,0 +1,19 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.IBY_PAYMENT_METHODS_TL;
+CREATE TABLE bronze_bec_ods_stg.IBY_PAYMENT_METHODS_TL AS
+SELECT
+  *
+FROM bec_raw_dl_ext.IBY_PAYMENT_METHODS_TL
+WHERE
+  kca_operation <> 'DELETE'
+  AND (COALESCE(PAYMENT_METHOD_CODE, 'NA'), COALESCE(LANGUAGE, 'NA'), last_update_date) IN (
+    SELECT
+      COALESCE(PAYMENT_METHOD_CODE, 'NA') AS PAYMENT_METHOD_CODE,
+      COALESCE(LANGUAGE, 'NA') AS LANGUAGE,
+      MAX(last_update_date)
+    FROM bec_raw_dl_ext.IBY_PAYMENT_METHODS_TL
+    WHERE
+      kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') = ''
+    GROUP BY
+      COALESCE(PAYMENT_METHOD_CODE, 'NA'),
+      COALESCE(LANGUAGE, 'NA')
+  );

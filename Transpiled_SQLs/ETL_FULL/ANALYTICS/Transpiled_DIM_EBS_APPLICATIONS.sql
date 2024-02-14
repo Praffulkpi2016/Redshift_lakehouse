@@ -1,0 +1,38 @@
+DROP table IF EXISTS gold_bec_dwh.DIM_EBS_APPLICATIONS;
+CREATE TABLE gold_bec_dwh.DIM_EBS_APPLICATIONS AS
+(
+  SELECT
+    APPLICATION_ID,
+    `LANGUAGE`,
+    APPLICATION_NAME,
+    CREATED_BY,
+    CREATION_DATE,
+    LAST_UPDATED_BY,
+    LAST_UPDATE_DATE,
+    LAST_UPDATE_LOGIN,
+    DESCRIPTION,
+    SOURCE_LANG,
+    ZD_EDITION_NAME,
+    ZD_SYNC,
+    'N' AS IS_DELETED_FLG,
+    (
+      SELECT
+        system_id
+      FROM bec_etl_ctrl.etlsourceappid
+      WHERE
+        source_system = 'EBS'
+    ) AS source_app_id,
+    (
+      SELECT
+        system_id
+      FROM bec_etl_ctrl.etlsourceappid
+      WHERE
+        source_system = 'EBS'
+    ) || '-' || COALESCE(APPLICATION_ID, 0) || '-' || COALESCE(`LANGUAGE`, 'NA') AS dw_load_id,
+    CURRENT_TIMESTAMP() AS dw_insert_date,
+    CURRENT_TIMESTAMP() AS dw_update_date
+  FROM BEC_ODS.FND_APPLICATION_TL
+);
+UPDATE bec_etl_ctrl.batch_dw_info SET load_type = 'I', last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  dw_table_name = 'dim_ebs_applications' AND batch_name = 'gl';

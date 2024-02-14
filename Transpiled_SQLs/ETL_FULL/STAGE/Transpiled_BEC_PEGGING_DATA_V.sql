@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.BEC_PEGGING_DATA_V;
+CREATE TABLE bronze_bec_ods_stg.BEC_PEGGING_DATA_V AS
+SELECT
+  *
+FROM bec_raw_dl_ext.BEC_PEGGING_DATA_V;

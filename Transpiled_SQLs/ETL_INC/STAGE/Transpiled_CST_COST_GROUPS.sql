@@ -1,0 +1,103 @@
+TRUNCATE table bronze_bec_ods_stg.CST_COST_GROUPS;
+INSERT INTO bronze_bec_ods_stg.CST_COST_GROUPS (
+  COST_GROUP_ID,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  CREATION_DATE,
+  CREATED_BY,
+  LAST_UPDATE_LOGIN,
+  REQUEST_ID,
+  PROGRAM_APPLICATION_ID,
+  PROGRAM_ID,
+  PROGRAM_UPDATE_DATE,
+  ORGANIZATION_ID,
+  COST_GROUP,
+  DESCRIPTION,
+  DISABLE_DATE,
+  ATTRIBUTE_CATEGORY,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  LEGAL_ENTITY,
+  COST_GROUP_TYPE,
+  ZD_EDITION_NAME,
+  ZD_SYNC,
+  KCA_OPERATION,
+  kca_seq_id,
+  kca_seq_date
+)
+(
+  SELECT
+    COST_GROUP_ID,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_LOGIN,
+    REQUEST_ID,
+    PROGRAM_APPLICATION_ID,
+    PROGRAM_ID,
+    PROGRAM_UPDATE_DATE,
+    ORGANIZATION_ID,
+    COST_GROUP,
+    DESCRIPTION,
+    DISABLE_DATE,
+    ATTRIBUTE_CATEGORY,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    LEGAL_ENTITY,
+    COST_GROUP_TYPE,
+    ZD_EDITION_NAME,
+    ZD_SYNC,
+    KCA_OPERATION,
+    kca_seq_id,
+    kca_seq_date
+  FROM bec_raw_dl_ext.CST_COST_GROUPS
+  WHERE
+    kca_operation <> 'DELETE'
+    AND COALESCE(kca_seq_id, '') <> ''
+    AND (COST_GROUP_ID, kca_seq_id) IN (
+      SELECT
+        COST_GROUP_ID,
+        MAX(kca_seq_id)
+      FROM bec_raw_dl_ext.CST_COST_GROUPS
+      WHERE
+        kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') <> ''
+      GROUP BY
+        COST_GROUP_ID
+    )
+    AND kca_seq_date > (
+      SELECT
+        (
+          executebegints - prune_days
+        )
+      FROM bec_etl_ctrl.batch_ods_info
+      WHERE
+        ods_table_name = 'cst_cost_groups'
+    )
+);

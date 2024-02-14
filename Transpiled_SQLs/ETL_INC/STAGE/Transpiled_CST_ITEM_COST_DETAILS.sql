@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.CST_ITEM_COST_DETAILS;
+CREATE TABLE bronze_bec_ods_stg.CST_ITEM_COST_DETAILS AS
+SELECT
+  *
+FROM bec_raw_dl_ext.CST_ITEM_COST_DETAILS
+WHERE
+  kca_operation <> 'DELETE';

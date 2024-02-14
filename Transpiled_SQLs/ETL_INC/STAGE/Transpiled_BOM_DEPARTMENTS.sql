@@ -1,0 +1,107 @@
+TRUNCATE table bronze_bec_ods_stg.bom_departments;
+INSERT INTO bronze_bec_ods_stg.bom_departments (
+  DEPARTMENT_ID,
+  DEPARTMENT_CODE,
+  ORGANIZATION_ID,
+  LAST_UPDATE_DATE,
+  LAST_UPDATED_BY,
+  CREATION_DATE,
+  CREATED_BY,
+  LAST_UPDATE_LOGIN,
+  DESCRIPTION,
+  DISABLE_DATE,
+  DEPARTMENT_CLASS_CODE,
+  ATTRIBUTE_CATEGORY,
+  ATTRIBUTE1,
+  ATTRIBUTE2,
+  ATTRIBUTE3,
+  ATTRIBUTE4,
+  ATTRIBUTE5,
+  ATTRIBUTE6,
+  ATTRIBUTE7,
+  ATTRIBUTE8,
+  ATTRIBUTE9,
+  ATTRIBUTE10,
+  ATTRIBUTE11,
+  ATTRIBUTE12,
+  ATTRIBUTE13,
+  ATTRIBUTE14,
+  ATTRIBUTE15,
+  REQUEST_ID,
+  PROGRAM_APPLICATION_ID,
+  PROGRAM_ID,
+  PROGRAM_UPDATE_DATE,
+  LOCATION_ID,
+  PA_EXPENDITURE_ORG_ID,
+  SCRAP_ACCOUNT,
+  EST_ABSORPTION_ACCOUNT,
+  MAINT_COST_CATEGORY,
+  KCA_OPERATION,
+  kca_seq_id,
+  kca_seq_date
+)
+(
+  SELECT
+    DEPARTMENT_ID,
+    DEPARTMENT_CODE,
+    ORGANIZATION_ID,
+    LAST_UPDATE_DATE,
+    LAST_UPDATED_BY,
+    CREATION_DATE,
+    CREATED_BY,
+    LAST_UPDATE_LOGIN,
+    DESCRIPTION,
+    DISABLE_DATE,
+    DEPARTMENT_CLASS_CODE,
+    ATTRIBUTE_CATEGORY,
+    ATTRIBUTE1,
+    ATTRIBUTE2,
+    ATTRIBUTE3,
+    ATTRIBUTE4,
+    ATTRIBUTE5,
+    ATTRIBUTE6,
+    ATTRIBUTE7,
+    ATTRIBUTE8,
+    ATTRIBUTE9,
+    ATTRIBUTE10,
+    ATTRIBUTE11,
+    ATTRIBUTE12,
+    ATTRIBUTE13,
+    ATTRIBUTE14,
+    ATTRIBUTE15,
+    REQUEST_ID,
+    PROGRAM_APPLICATION_ID,
+    PROGRAM_ID,
+    PROGRAM_UPDATE_DATE,
+    LOCATION_ID,
+    PA_EXPENDITURE_ORG_ID,
+    SCRAP_ACCOUNT,
+    EST_ABSORPTION_ACCOUNT,
+    MAINT_COST_CATEGORY,
+    KCA_OPERATION,
+    kca_seq_id,
+    kca_seq_date
+  FROM bec_raw_dl_ext.bom_departments
+  WHERE
+    kca_operation <> 'DELETE'
+    AND COALESCE(kca_seq_id, '') <> ''
+    AND (DEPARTMENT_ID, kca_seq_id) IN (
+      SELECT
+        DEPARTMENT_ID,
+        MAX(kca_seq_id)
+      FROM bec_raw_dl_ext.bom_departments
+      WHERE
+        kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') <> ''
+      GROUP BY
+        DEPARTMENT_ID
+    )
+    AND kca_seq_date > (
+      SELECT
+        (
+          executebegints - prune_days
+        )
+      FROM bec_etl_ctrl.batch_ods_info
+      WHERE
+        ods_table_name = 'bom_departments'
+    )
+);

@@ -1,0 +1,25 @@
+DROP TABLE IF EXISTS bronze_bec_ods_stg.fnd_new_messages;
+CREATE TABLE bronze_bec_ods_stg.fnd_new_messages AS
+SELECT
+  *
+FROM bec_raw_dl_ext.fnd_new_messages
+WHERE
+  kca_operation <> 'DELETE'
+  AND (COALESCE(APPLICATION_ID, 0), COALESCE(MESSAGE_NAME, 'NA'), COALESCE(LANGUAGE_CODE, 'NA'), COALESCE(MESSAGE_NUMBER, 0), COALESCE(ZD_EDITION_NAME, 'NA'), last_update_date) IN (
+    SELECT
+      COALESCE(APPLICATION_ID, 0) AS APPLICATION_ID,
+      COALESCE(MESSAGE_NAME, 'NA') AS MESSAGE_NAME,
+      COALESCE(LANGUAGE_CODE, 'NA') AS LANGUAGE_CODE,
+      COALESCE(MESSAGE_NUMBER, 0) AS MESSAGE_NUMBER,
+      COALESCE(ZD_EDITION_NAME, 'NA') AS ZD_EDITION_NAME,
+      MAX(last_update_date)
+    FROM bec_raw_dl_ext.fnd_new_messages
+    WHERE
+      kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') = ''
+    GROUP BY
+      COALESCE(APPLICATION_ID, 0),
+      COALESCE(MESSAGE_NAME, 'NA'),
+      COALESCE(LANGUAGE_CODE, 'NA'),
+      COALESCE(MESSAGE_NUMBER, 0),
+      COALESCE(ZD_EDITION_NAME, 'NA')
+  );

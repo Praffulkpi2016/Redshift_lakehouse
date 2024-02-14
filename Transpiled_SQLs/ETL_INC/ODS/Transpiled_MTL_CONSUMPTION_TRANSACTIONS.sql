@@ -1,0 +1,141 @@
+/* Delete Records */
+DELETE FROM silver_bec_ods.MTL_CONSUMPTION_TRANSACTIONS
+WHERE
+  TRANSACTION_ID IN (
+    SELECT
+      stg.TRANSACTION_ID
+    FROM silver_bec_ods.MTL_CONSUMPTION_TRANSACTIONS AS ods, bronze_bec_ods_stg.MTL_CONSUMPTION_TRANSACTIONS AS stg
+    WHERE
+      ods.TRANSACTION_ID = stg.TRANSACTION_ID AND stg.kca_operation IN ('INSERT', 'UPDATE')
+  );
+/* Insert records */
+INSERT INTO silver_bec_ods.mtl_consumption_transactions (
+  TRANSACTION_ID,
+  CONSUMPTION_RELEASE_ID,
+  CONSUMPTION_PO_HEADER_ID,
+  CONSUMPTION_PROCESSED_FLAG,
+  REQUEST_ID,
+  CREATED_BY,
+  PROGRAM_APPLICATION_ID,
+  CREATION_DATE,
+  PROGRAM_ID,
+  LAST_UPDATED_BY,
+  PROGRAM_UPDATE_DATE,
+  LAST_UPDATE_DATE,
+  LAST_UPDATE_LOGIN,
+  NET_QTY,
+  BATCH_ID,
+  RATE,
+  RATE_TYPE,
+  TAX_CODE_ID,
+  TAX_RATE,
+  ERROR_CODE,
+  RECOVERABLE_TAX,
+  NON_RECOVERABLE_TAX,
+  TAX_RECOVERY_RATE,
+  PARENT_TRANSACTION_ID,
+  CHARGE_ACCOUNT_ID,
+  VARIANCE_ACCOUNT_ID,
+  GLOBAL_AGREEMENT_FLAG,
+  NEED_BY_DATE,
+  ERROR_EXPLANATION,
+  SECONDARY_NET_QTY,
+  BLANKET_PRICE,
+  PO_DISTRIBUTION_ID,
+  INTERFACE_DISTRIBUTION_REF,
+  TRANSACTION_SOURCE_ID,
+  INVENTORY_ITEM_ID,
+  ACCRUAL_ACCOUNT_ID,
+  ORGANIZATION_ID,
+  OWNING_ORGANIZATION_ID,
+  TRANSACTION_DATE,
+  PO_LINE_ID,
+  KCA_OPERATION,
+  IS_DELETED_FLG,
+  kca_seq_id,
+  kca_seq_date
+)
+(
+  SELECT
+    TRANSACTION_ID,
+    CONSUMPTION_RELEASE_ID,
+    CONSUMPTION_PO_HEADER_ID,
+    CONSUMPTION_PROCESSED_FLAG,
+    REQUEST_ID,
+    CREATED_BY,
+    PROGRAM_APPLICATION_ID,
+    CREATION_DATE,
+    PROGRAM_ID,
+    LAST_UPDATED_BY,
+    PROGRAM_UPDATE_DATE,
+    LAST_UPDATE_DATE,
+    LAST_UPDATE_LOGIN,
+    NET_QTY,
+    BATCH_ID,
+    RATE,
+    RATE_TYPE,
+    TAX_CODE_ID,
+    TAX_RATE,
+    ERROR_CODE,
+    RECOVERABLE_TAX,
+    NON_RECOVERABLE_TAX,
+    TAX_RECOVERY_RATE,
+    PARENT_TRANSACTION_ID,
+    CHARGE_ACCOUNT_ID,
+    VARIANCE_ACCOUNT_ID,
+    GLOBAL_AGREEMENT_FLAG,
+    NEED_BY_DATE,
+    ERROR_EXPLANATION,
+    SECONDARY_NET_QTY,
+    BLANKET_PRICE,
+    PO_DISTRIBUTION_ID,
+    INTERFACE_DISTRIBUTION_REF,
+    TRANSACTION_SOURCE_ID,
+    INVENTORY_ITEM_ID,
+    ACCRUAL_ACCOUNT_ID,
+    ORGANIZATION_ID,
+    OWNING_ORGANIZATION_ID,
+    TRANSACTION_DATE,
+    PO_LINE_ID,
+    KCA_OPERATION,
+    'N' AS IS_DELETED_FLG,
+    CAST(NULLIF(KCA_SEQ_ID, '') AS DECIMAL(36, 0)) AS KCA_SEQ_ID,
+    kca_seq_date
+  FROM bronze_bec_ods_stg.mtl_consumption_transactions
+  WHERE
+    kca_operation IN ('INSERT', 'UPDATE')
+    AND (TRANSACTION_ID, kca_seq_id) IN (
+      SELECT
+        TRANSACTION_ID,
+        MAX(kca_seq_id)
+      FROM bronze_bec_ods_stg.mtl_consumption_transactions
+      WHERE
+        kca_operation IN ('INSERT', 'UPDATE')
+      GROUP BY
+        TRANSACTION_ID
+    )
+);
+/* Soft delete */
+UPDATE silver_bec_ods.mtl_consumption_transactions SET IS_DELETED_FLG = 'N';
+UPDATE silver_bec_ods.mtl_consumption_transactions SET IS_DELETED_FLG = 'Y'
+WHERE
+  (
+    TRANSACTION_ID
+  ) IN (
+    SELECT
+      TRANSACTION_ID
+    FROM bec_raw_dl_ext.mtl_consumption_transactions
+    WHERE
+      (TRANSACTION_ID, KCA_SEQ_ID) IN (
+        SELECT
+          TRANSACTION_ID,
+          MAX(KCA_SEQ_ID) AS KCA_SEQ_ID
+        FROM bec_raw_dl_ext.mtl_consumption_transactions
+        GROUP BY
+          TRANSACTION_ID
+      )
+      AND kca_operation = 'DELETE'
+  );
+UPDATE bec_etl_ctrl.batch_ods_info SET last_refresh_date = CURRENT_TIMESTAMP()
+WHERE
+  ods_table_name = 'mtl_consumption_transactions';

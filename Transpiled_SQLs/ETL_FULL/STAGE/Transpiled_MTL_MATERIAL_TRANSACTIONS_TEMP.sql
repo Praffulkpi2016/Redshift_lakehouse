@@ -1,0 +1,21 @@
+DROP table IF EXISTS bronze_bec_ods_stg.MTL_MATERIAL_TRANSACTIONS_TEMP;
+CREATE TABLE bronze_bec_ods_stg.MTL_MATERIAL_TRANSACTIONS_TEMP AS
+(
+  SELECT
+    *
+  FROM bec_raw_dl_ext.MTL_MATERIAL_TRANSACTIONS_TEMP
+  WHERE
+    kca_operation <> 'DELETE'
+    AND (COALESCE(TRANSACTION_HEADER_ID, 0), COALESCE(TRANSACTION_TEMP_ID, 0), last_update_date) IN (
+      SELECT
+        COALESCE(TRANSACTION_HEADER_ID, 0) AS TRANSACTION_HEADER_ID,
+        COALESCE(TRANSACTION_TEMP_ID, 0) AS TRANSACTION_TEMP_ID,
+        MAX(last_update_date)
+      FROM bec_raw_dl_ext.MTL_MATERIAL_TRANSACTIONS_TEMP
+      WHERE
+        kca_operation <> 'DELETE' AND COALESCE(kca_seq_id, '') = ''
+      GROUP BY
+        TRANSACTION_HEADER_ID,
+        TRANSACTION_TEMP_ID
+    )
+);
